@@ -4,8 +4,8 @@
  *  Created on: 23 de jan de 2022
  *      Author: Lucas Vargas Dias
  */
-#include <PKISymmetric.hpp>
-#include <PKI++.hpp>
+#include <PKIpp/PKISymmetric.hpp>
+#include <PKIpp/PKI++.hpp>
 
 #include <assert.h>
 
