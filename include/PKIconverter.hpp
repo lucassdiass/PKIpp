@@ -14,18 +14,44 @@ namespace PKI
 {
 namespace Converter
 {
+
+//!< Class to encoder/decoder base64
 class Base64
 {
 public :
-	std::string Encoder(std::string);
-	std::string Decoder(std::string);
+	/*
+	 * @brief Convert a string to base64.
+	 * @param decoded text to be encoded.
+	 * @return text encoded
+	 */
+	std::string Encoder(std::string decoded);
+
+	/*
+	 * @brief Convert a string from base64 to original way.
+	 * @param encoded text to be decoded.
+	 * @return text decoded
+	 */
+	std::string Decoder(std::string encoded);
 };
 
+//!< Class to encoder/decoder hexadecimal
 class Hexadecimal
 {
 public :
-	std::string Encoder(std::string);
-	std::string Decoder(std::string);
+
+	/*
+	 * @brief Convert a string to hexadecimal way.
+	 * @param decoded text to be encoded.
+	 * @return text encoded
+	 */
+	std::string Encoder(std::string decoded);
+
+	/*
+	 * @brief Convert a string from hexadecimal way to original way.
+	 * @param encoded text to be decoded.
+	 * @return text decoded
+	 */
+	std::string Decoder(std::string encoded);
 };
 }
 }

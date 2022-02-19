@@ -57,7 +57,7 @@ public :
 	 */
 	PKIRSA(std::string file_pub_path, std::string file_prv_path,bool arefile);
 	/*
-	 * @brief: It make digital signature from a message receive as param.
+	 * @brief: Make digital signature from a message receive as param.
 	 * However, it can be throw std::runtime_error if RSA private key is nullptr,
 	 * message has length equal to 0 or signature failed
 	 * @param: Message to be signed
