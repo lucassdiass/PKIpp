@@ -7,7 +7,6 @@
 
 #ifndef PKI___HPP_
 #define PKI___HPP_
-//#include <libPKI.h>
 #include "Interface.hpp"
 #include <openssl/evp.h>
 
@@ -273,7 +272,7 @@ public :
 	 */
 	std::string SavePubKey() override final;
 	/*
-	 * @brief: Store  Private Key in a string
+	 * @brief: Store Private Key in a string
 	 * @param:
 	 * @return: Return a Private Key in a string with PEM format
 	 */
