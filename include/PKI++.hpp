@@ -281,7 +281,7 @@ public :
 	{
 		return Type;
 	}
-	~PKICertificate();//=default;
+	~PKICertificate();
 private :
 	std::string PubKeyToStr(EVP_PKEY*);
 	std::string CertToStr(X509 * );
