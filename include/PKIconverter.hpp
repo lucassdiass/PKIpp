@@ -2,7 +2,7 @@
  * PKIconverter.hpp
  *
  *  Created on: 9 de ago de 2020
- *      Author: root
+ *      Author: Lucas Dias
  */
 
 #ifndef PKICONVERTER_HPP_

@@ -2,7 +2,7 @@
  * PKISymmetric.hpp
  *
  *  Created on: 4 de jan de 2021
- *      Author: root
+ *      Author: Lucas Dias
  */
 
 #ifndef PKISYMMETRIC_HPP_
@@ -24,7 +24,14 @@ public :
 			{
 
 			}
-
+	std::string  RecoveryKey()
+	{
+		return SecretKey;
+	}
+	std::string RecoveryIV()
+	{
+		return "";
+	}
 	std::string EncryptMessage(const std::string& )  override final;
 	std::string DecryptMessage(const std::string& ) override final;
 	~AesECBMode() =default;
@@ -39,6 +46,14 @@ public :
 	void ConfigureIV(std::string)  override final;
 	std::string EncryptMessage(const std::string& )  override final;
 	std::string DecryptMessage(const std::string& ) override final;
+	std::string  RecoveryKey()
+	{
+		return SecretKey;
+	}
+	std::string RecoveryIV()
+	{
+		return IV;
+	}
 	~AesCBCMode() =default;
 private :
 	std::string SecretKey, IV;
@@ -51,6 +66,14 @@ public :
 	void ConfigureIV(std::string)  override final;
 	std::string EncryptMessage(const std::string& )  override final;
 	std::string DecryptMessage(const std::string& ) override final;
+	std::string  RecoveryKey()
+	{
+		return SecretKey;
+	}
+	std::string RecoveryIV()
+	{
+		return IV;
+	}
 	~AesOFBMode() =default;
 private :
 	std::string SecretKey, IV;
@@ -61,7 +84,14 @@ public :
 	AesCFBMode() =default;
 	void ConfigureKey(std::string)  override final;
 	void ConfigureIV(std::string) ;
-
+	std::string  RecoveryKey()
+	{
+		return SecretKey;
+	}
+	std::string RecoveryIV()
+	{
+		return IV;
+	}
 	std::string EncryptMessage(const std::string&)  override final;
 	std::string DecryptMessage(const std::string&) override final;
 	~AesCFBMode() =default;
@@ -76,6 +106,14 @@ public :
 	void ConfigureIV(std::string)   override final;
 	std::string EncryptMessage(const std::string& )  override final;
 	std::string DecryptMessage(const std::string& ) override final;
+	std::string  RecoveryKey()
+	{
+		return SecretKey;
+	}
+	std::string RecoveryIV()
+	{
+		return CTR;
+	}
 	~AesCTRMode() =default;
 private :
 	std::string SecretKey, CTR;
@@ -94,6 +132,14 @@ public :
 			}
 	bool VerifyMAC(std::string text, std::string mac)  override final;
 	std::string GenerateMAC(std::string text) override final;
+	std::string  RecoveryKey()
+	{
+		return SecretKey;
+	}
+	std::string RecoveryIV()
+	{
+		return "";
+	}
 	~CMACMode() =default;
 private :
 	std::string SecretKey;
@@ -107,6 +153,14 @@ public :
 			{
 
 			}
+	std::string  RecoveryKey()
+	{
+		return SecretKey;
+	}
+	std::string RecoveryIV()
+	{
+		return "";
+	}
 	bool VerifyMAC(std::string text, std::string mac)  override final;
 	std::string GenerateMAC(std::string text) override final;
 	~HMACMode() =default;
@@ -124,7 +178,14 @@ public :
 	void ConfigureIV(std::string)   override final;
 	std::string EncryptAuthMessage(std::string plain , std::string&encrypted)  override final;
 	bool  DecryptVerifyMessage(std::string encrypted , std::string mac, std::string&plain);
-
+	std::string  RecoveryKey()
+	{
+		return SecretKey;
+	}
+	std::string RecoveryIV()
+	{
+		return IV;
+	}
 	~AesCCMMode() =default;
 private :
 	std::string SecretKey, IV;
@@ -138,7 +199,14 @@ public :
 	void ConfigureIV(std::string)   override final;
 	std::string EncryptAuthMessage(std::string plain , std::string&encrypted)  override final;
 	bool  DecryptVerifyMessage(std::string encrypted , std::string mac, std::string&plain);
-
+	std::string  RecoveryKey()
+	{
+		return SecretKey;
+	}
+	std::string RecoveryIV()
+	{
+		return IV;
+	}
 	~AesGCMMode() =default;
 private :
 	std::string SecretKey, IV;
