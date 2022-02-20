@@ -12,7 +12,7 @@ include_directories(include)
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 # Install library
-install(TARGETS ${PROJECT_NAME} DESTINATION lib/${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME} DESTINATION lib/)
 
 # Install library headers
 file(GLOB HEADERS include/*.hpp)
