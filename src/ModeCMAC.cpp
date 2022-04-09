@@ -2,7 +2,7 @@
  * CMAC.cpp
  *
  *  Created on: 5 de jan de 2021
- *      Author: Lucas Vargas Dias
+ *      Author: Lucas Dias
  */
 
 
@@ -14,7 +14,7 @@ using namespace PKI::Symmetric;
 void CMACMode::ConfigureKey(std::string newKey)
 {
 
-	unsigned char *key=nullptr,*aux=nullptr;
+	unsigned char *key=nullptr;
 	if(newKey.empty())
 	{
 		key=new unsigned char[32];
@@ -30,7 +30,7 @@ void CMACMode::ConfigureKey(std::string newKey)
 		}
 		else
 		{
-			throw std::runtime_error{"Nao foi possivel gerar chave"};
+			throw std::runtime_error{"It was not possible generate the key"};
 		}
 	}
 	else
@@ -57,34 +57,40 @@ std::string CMACMode::GenerateMAC(std::string text)
 {
 	EVP_PKEY *skey=nullptr;
 	std::string mac{};
-	EVP_MD_CTX*mdx=nullptr;
-	size_t req = 0,vlen=0;
+	const EVP_MD*mdx=EVP_sha256();
+	EVP_MD_CTX*ctx=nullptr;
+	size_t req = 0;
 	unsigned char *aux_mac=nullptr;
 	bool isOk{false};
-	if(SecretKey.size()&& text.size())
+	if(SecretKey.size()>=32&& text.size())
 	{
-		skey=EVP_PKEY_new_CMAC_key(nullptr,(unsigned char*)SecretKey.data(), SecretKey.size(),EVP_aes_256_ecb());
-		mdx=EVP_MD_CTX_new();
-		if(skey!=nullptr && mdx!=nullptr && EVP_DigestSignInit(mdx, nullptr, EVP_sha256(), nullptr, skey) &&
-				EVP_DigestSignUpdate(mdx,(unsigned char*)text.data(),text.size()) && EVP_DigestSignFinal(mdx,nullptr, &req))
+
+		skey=EVP_PKEY_new_CMAC_key(nullptr,(unsigned char*)SecretKey.data(),32,EVP_aes_256_ecb());
+		ctx = EVP_MD_CTX_create();
+		if(skey!=nullptr && mdx!=nullptr && ctx!=nullptr && EVP_DigestInit_ex(ctx, mdx, NULL)==1 &&
+				EVP_DigestSignInit(ctx, nullptr, EVP_sha256(), nullptr, skey) &&
+				EVP_DigestSignUpdate(ctx, text.data(),text.size()) &&
+				EVP_DigestSignFinal(ctx,nullptr, &req))
 		{
+
 			aux_mac=new unsigned char[req];
-			isOk=(aux_mac!=nullptr && EVP_DigestSignFinal(mdx,aux_mac, &req) );
+			isOk=(aux_mac!=nullptr && EVP_DigestSignFinal(ctx,aux_mac, &req) );
 
 			if(isOk)
 			{
+
 				for(int index=0;index<req;index++)
 				{
 					mac.push_back(*(aux_mac+index));
 				}
 				isOk=mac.size();
-
 			}
 		}
+
 		EVP_PKEY_free(skey);
 		skey=nullptr;
-		EVP_MD_CTX_free(mdx);
-		mdx=nullptr;
+		EVP_MD_CTX_free(ctx);
+		ctx=nullptr;
 		delete []aux_mac;
 		aux_mac=nullptr;
 		if(isOk)
@@ -92,51 +98,17 @@ std::string CMACMode::GenerateMAC(std::string text)
 			return mac;
 		}
 	}
-	throw std::runtime_error{"Não foi possível gerar CMAC da mensagem "+text};
+	throw std::runtime_error{"It was not possible generate CMAC of "+text};
 }
 bool CMACMode::VerifyMAC(std::string text, std::string mac)
 {
-	EVP_PKEY* skey=nullptr;
-	unsigned int *len=nullptr;
-	EVP_MD_CTX*mdx=nullptr;
 	std::string auxiliar{};
 	std::string mac_aux{};
-	size_t req = 0,vlen=0;
-	unsigned char *aux_mac=nullptr;
 	bool isOk{false};
 	if(SecretKey.size() && text.size() && mac.size())
 	{
-		//auxiliar=text;
-		//auxiliar.append(signature);
-		len=new unsigned int;
-		if(len!=nullptr)
-		{
-			skey=EVP_PKEY_new_CMAC_key(nullptr,(unsigned char*)SecretKey.data(), SecretKey.size(),EVP_aes_256_ecb());
-			mdx=EVP_MD_CTX_new();
-			if(skey!=nullptr && mdx!=nullptr && EVP_DigestSignInit(mdx, nullptr, EVP_sha256(), nullptr, skey) &&
-					EVP_DigestSignUpdate(mdx,(unsigned char*)text.data(),text.size()) && EVP_DigestSignFinal(mdx,nullptr, &req))
-			{
-				aux_mac=new unsigned char[req];
-				isOk=(aux_mac!=nullptr && EVP_DigestSignFinal(mdx,aux_mac, &req));
-
-				if(isOk)
-				{
-					for(int index=0;index<req;index++)
-					{
-						mac_aux.push_back(*(aux_mac+index));
-					}
-					isOk= (mac_aux.size()==mac.size()) && !(std::strncmp(mac_aux.data(), mac.data(), mac.size()));
-				}
-			}
-			EVP_PKEY_free(skey);
-			skey=nullptr;
-			EVP_MD_CTX_free(mdx);
-			mdx=nullptr;
-			delete []aux_mac;
-			aux_mac=nullptr;
-		}
+		mac_aux=this->GenerateMAC(text);
+		return (mac.size()==mac_aux.size() && !std::memcmp(mac_aux.data(), mac.data(), mac.size()));
 	}
-	delete len;
-	len=nullptr;
 	return isOk;
 }
