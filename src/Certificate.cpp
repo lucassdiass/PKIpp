@@ -2,7 +2,7 @@
  * Certificate.cpp
  *
  *  Created on: 24 de ago de 2020
- *      Author: root
+ *      Author: Lucas Dias
  */
 #include "PKI++.hpp"
 #include <iostream>
@@ -74,7 +74,7 @@ PKICertificate::PKICertificate(std::string file_cert_path,std::string crlpath, b
 			break;
 		default:
 			EVP_PKEY_free(pkey);
-			std::runtime_error{"Algoritmo desconhecido"};
+			throw std::runtime_error{"Unsupported algorithm"};
 		}
 	}
 	EVP_PKEY_free(pkey);
@@ -85,7 +85,7 @@ PKICertificate::PKICertificate(std::string file_path , std::string file_prv,std:
 {
 	BIO *prvbio=nullptr;
 	std::string certaux{};
-	std::ifstream if_prv{file_prv};// if_pub{file_path};
+	std::ifstream if_prv{file_prv};
 	EVP_PKEY *prv=nullptr;
 	if(arefiles)
 	{
@@ -115,7 +115,7 @@ PKICertificate::PKICertificate(std::string file_path , std::string file_prv,std:
 		this->Rsa->PrvKey=prv;
 		break;
 	default:
-		std::runtime_error{"Algoritmo desconhecido"};
+		throw std::runtime_error{"Unsupported algorithm"};
 	}
 }
 
@@ -130,7 +130,7 @@ std::string PKICertificate::SignMessage(std::string message)
 		case TypeAlgorithm::rsa :
 			return Rsa->SignMessage(message);
 		default :
-			throw std::runtime_error{"Algortimo não implementado"};
+			throw std::runtime_error{"Unsupported algorithm"};
 		}
 	}
 	catch(...)
@@ -149,7 +149,7 @@ bool PKICertificate::VerifySignatureMessage(std::string text, std::string signat
 		case TypeAlgorithm::rsa :
 			return Rsa->VerifySignatureMessage(text,signature);
 		default :
-			throw std::runtime_error{"Algortimo não implementado"};
+			throw std::runtime_error{"Unsupported algorithm"};
 		}
 	}
 	catch(...)
@@ -169,7 +169,7 @@ std::string PKICertificate::EncryptMessage(const std::string& plain)
 		case TypeAlgorithm::rsa :
 			return Rsa->EncryptMessage(plain);
 		default :
-			throw std::runtime_error{"Algortimo não implementado"};
+			throw std::runtime_error{"Unsupported algorithm"};
 		}
 	}
 	catch(...)
@@ -189,7 +189,7 @@ std::string PKICertificate::DecryptMessage(const std::string&encrypted)
 		case TypeAlgorithm::rsa :
 			return Rsa->DecryptMessage(encrypted);
 		default :
-			throw std::runtime_error{"Algortimo não implementado"};
+			throw std::runtime_error{"Unsupported algorithm"};
 		}
 	}
 	catch(...)
@@ -217,7 +217,7 @@ PKICertificate::GetSerial()
 		auto nserial=X509_get0_serialNumber(Cert);
 		if(nserial && nserial->length)
 		{
-			serial=std::string{(char*)nserial->data, nserial->length};
+			serial=std::string{reinterpret_cast<char *>(nserial->data), static_cast<size_t>(nserial->length)};
 		}
 	}
 	return serial;
@@ -238,7 +238,7 @@ std::string  PKICertificate::PubKeyToStr(EVP_PKEY*publickey)
 			{
 				for(int index=0;index<success;index++)
 				{
-					pubkey_str.push_back(*(pubkey+index));//=std::string{pubkey,success};
+					pubkey_str.push_back(*(pubkey+index));
 				}
 			}
 		}
@@ -335,7 +335,7 @@ std::string PKICertificate::SignCert(const struct Requisition&requisicao, int se
 		{
 			ok=false;
 			certificate=X509_new();
-			//Número da versão é decrementado. Para uso de X509v3, numero da versão é 3-1=2;
+			//Version number is decremented. For exemple,X509v3 is version number 3-1=2;
 			if(certificate!=nullptr && X509_set_version(certificate,2))
 			{
 				std::srand(std::time(nullptr));
@@ -367,14 +367,14 @@ std::string PKICertificate::SignCert(const struct Requisition&requisicao, int se
 								ex=X509V3_EXT_conf_nid(NULL, &ctx, NID_ext_key_usage, extensionsstr.data());
 								if(ex==nullptr)
 								{
-									throw std::runtime_error{"não foi possível adicionar extensões "+extensionsstr};
+									throw std::runtime_error{"It was not possible add extensions "+extensionsstr};
 								}
 								bool adexter=X509_add_ext(certificate, ex, -1);
 								X509_EXTENSION_free(ex);
 								ex=nullptr;
 								if(!adexter)
 								{
-									throw std::runtime_error{"não foi possível adicionar extensões "+extensionsstr};
+									throw std::runtime_error{"It was not possible add extensions "+extensionsstr};
 								}
 							}
 							else
@@ -413,13 +413,13 @@ std::string PKICertificate::SignCert(const struct Requisition&requisicao, int se
 	{
 		return certificate_str;
 	}
-	throw std::runtime_error{"Não foi possível assinar certificado"};
+	throw std::runtime_error{"It was not possible sign the certificate"};
 }
 bool PKICertificate::VerifyValidDataOk(X509 *certificate)
 {
 	if(certificate!=nullptr && certificate!=NULL)
 	{
-		//quando time_t * é nullptr ou NULL, HORARIO atual do sistema é usado
+		//when time_t * is nullptr or NULL, the hout from the system is used
 		return  (X509_cmp_time(X509_get_notBefore(certificate), nullptr)==-1) && (X509_cmp_time(X509_get_notAfter(certificate), nullptr));
 	}
 	return false;
@@ -526,6 +526,8 @@ PKICertificate&PKICertificate::CreateCRL(std::string CRLfile)
 	case TypeAlgorithm::rsa :
 		skkey=this->Rsa->PrvKey;
 		break;
+	default:
+		skkey = nullptr;
 	}
 	biooutput=BIO_new_file(CRLfile.c_str(),"w");
 	ok=(crl!=nullptr && skkey!=nullptr && (tm=ASN1_TIME_set(nullptr,t))!=nullptr && X509_CRL_set1_lastUpdate(crl,tm) &&
@@ -534,17 +536,16 @@ PKICertificate&PKICertificate::CreateCRL(std::string CRLfile)
 			X509_CRL_sign(crl,skkey,EVP_sha256()) &&
 			biooutput!=nullptr && PEM_write_bio_X509_CRL(biooutput,crl)>0);
 	BIO_free_all(biooutput); biooutput=nullptr;
-	//PEM_write_bio_PrivateKey(bp_private,PrvKey,NULL, NULL, 0, 0, NULL)
+
 	X509_CRL_free(crl); crl=nullptr;
 	if(!ok)
 	{
-		throw std::runtime_error{"Não foi possível criar CRL"};
+		throw std::runtime_error{"It was not possible create CRL"};
 	}
 	return *this;
 }
 PKICertificate&PKICertificate::RevokeCert(std::string cert,bool isfile)
 {
-	//int X509_REVOKED_set_serialNumber(X509_REVOKED *x, ASN1_INTEGER *serial);
 	X509*certificate=nullptr;
 	X509_REVOKED *x=nullptr;
 	time_t t=time(nullptr);
@@ -599,7 +600,7 @@ PKICertificate&PKICertificate::RevokeCert(std::string cert,bool isfile)
 		{
 			Crl=X509_CRL_new();
 		}
-		//X509_verify(certificate,pubcert)>0 && this->VerifyValidDataOk(certificate)
+
 		ok=(X509_verify(certificate,X509_get_pubkey(this->Cert))<=0 || !this->VerifyValidDataOk(certificate)|| serial==nullptr || (tm=ASN1_TIME_set(nullptr,t))==nullptr || Crl==nullptr ||
 				(x=X509_REVOKED_new())==nullptr ||
 				X509_REVOKED_set_serialNumber(x,serial)<=0 ||
@@ -619,7 +620,7 @@ PKICertificate&PKICertificate::RevokeCert(std::string cert,bool isfile)
 
 	if(ok)
 	{
-		throw std::runtime_error{"Não foi possível assinar e revogar o certificado"};
+		throw std::runtime_error{"It was not possible sign and revogate the digital certificate"};
 	}
 	return *this;
 }
@@ -628,7 +629,7 @@ void  PKICertificate::SaveCRL(std::string crlpath)
 	BIO*bp_crl = nullptr;
 	if(!crlpath.size())
 	{
-		throw std::runtime_error{"Caminho de arquivo inválido"};
+		throw std::runtime_error{"Invalid path"};
 	}
 	if((bp_crl = BIO_new_file(crlpath.c_str(), "w+"))!=nullptr && PEM_write_bio_X509_CRL(bp_crl,Crl)>0)
 	{
@@ -638,7 +639,7 @@ void  PKICertificate::SaveCRL(std::string crlpath)
 	}
 	BIO_free_all(bp_crl);
 	bp_crl=nullptr;
-	throw std::runtime_error{"nao foi possivel salvar crl."};
+	throw std::runtime_error{"It was not possible store CRL."};
 }
 std::string PKICertificate::SavePubKey()
 {
@@ -744,6 +745,7 @@ std::string PKICertificate::SavePrvKey()
 	}
 	return None;
 }
+
 void PKICertificate::SavePrvKey(std::string pathfile)
 {
 	try
@@ -771,6 +773,7 @@ void PKICertificate::SavePrvKey(std::string pathfile)
 		throw;
 	}
 }
+
 void PKICertificate::SavePubKey(std::string pathfile)
 {
 	try
