@@ -48,8 +48,8 @@ PKIRSA::PKIRSA(unsigned int length) : InterfacePKI::SignatureDigital{},Interface
 		}
 		case 2:
 		{
-			PairKey=EVP_PKEY_new();
-			if(PairKey==nullptr)
+			PairKey = EVP_PKEY_new();
+			if(PairKey == nullptr)
 			{
 				ret=0;
 			}
@@ -75,9 +75,8 @@ PKIRSA::PKIRSA(unsigned int length) : InterfacePKI::SignatureDigital{},Interface
 	ret=0;
 	bp_public=BIO_new(BIO_s_mem());
 	bp_private=BIO_new(BIO_s_mem());
-	//PrvKey=EVP_PKEY_new();
-	//PubKey=EVP_PKEY_new();
-	if(bp_private!=nullptr && bp_public!=nullptr )//&& PrvKey !=nullptr && PubKey!=nullptr)
+
+	if(bp_private!=nullptr && bp_public!=nullptr )
 	{
 		if(PEM_write_bio_PUBKEY(bp_public,PairKey)>0 &&  PEM_write_bio_PrivateKey(bp_private,PairKey,nullptr, nullptr, 0, 0, nullptr)>0)
 		{
@@ -98,8 +97,6 @@ PKIRSA::PKIRSA(unsigned int length) : InterfacePKI::SignatureDigital{},Interface
 		EVP_PKEY_free(PrvKey);
 		throw std::runtime_error{"Erro na geração de chaves"};
 	}
-	//this->SavePrvKey("a.txt");
-	//this->SavePubKey("b.txt");
 }
 
 
@@ -118,7 +115,7 @@ PKIRSA::PKIRSA(std::string file_pub_path, bool isfile) : InterfacePKI::Signature
 		if(fs)
 		{
 			fs.close();
-			//bp_public=BIO_new(BIO_s_file());
+
 			if((bp_public = BIO_new_file(file_pub_path.c_str(), "r+"))!=nullptr
 					&& (PubKey=PEM_read_bio_PUBKEY(bp_public,nullptr,nullptr,nullptr))!=nullptr)
 			{
@@ -139,14 +136,14 @@ PKIRSA::PKIRSA(std::string file_pub_path, bool isfile) : InterfacePKI::Signature
 	if(!ret)
 	{
 		EVP_PKEY_free(PubKey);
-		throw std::runtime_error{"Não foi possível carregar chave de "+file_pub_path};
+		throw std::runtime_error{"It was not possible load the key from "+file_pub_path};
 	}
 }
 PKIRSA::PKIRSA(std::string file_pub_path, std::string file_prv_path, bool arefile=true) : PKIRSA{file_pub_path, arefile}
 {
 	if(!file_prv_path.size())
 	{
-		throw std::runtime_error{"Caminho de arquivo inválido"};
+		throw std::runtime_error{"Invalid path"};
 	}
 	int ret=0;
 	BIO*bp_private=nullptr;
@@ -156,7 +153,7 @@ PKIRSA::PKIRSA(std::string file_pub_path, std::string file_prv_path, bool arefil
 		if(fs)
 		{
 			fs.close();
-			//	bp_private=BIO_new(BIO_s_file());
+
 			if((bp_private = BIO_new_file(file_prv_path.c_str(), "r+"))!=nullptr
 					&& (PrvKey=PEM_read_bio_PrivateKey(bp_private,nullptr,nullptr,nullptr))!=nullptr)
 			{
@@ -177,7 +174,7 @@ PKIRSA::PKIRSA(std::string file_pub_path, std::string file_prv_path, bool arefil
 	if(!ret)
 	{
 		EVP_PKEY_free(PrvKey);
-		throw std::runtime_error{"Não foi possível carregar chave de "+file_prv_path};
+		throw std::runtime_error{"It was not possible load the key from "+file_prv_path};
 	}
 }
 std::string PKIRSA::GenerateRequest(const request_data& dados)
@@ -193,7 +190,7 @@ std::string PKIRSA::GenerateRequest(const request_data& dados)
 	if(x509_req==nullptr || X509_REQ_set_version(x509_req,3)<1 || (x509_name= X509_REQ_get_subject_name(x509_req))==nullptr)
 	{
 		X509_REQ_free(x509_req);
-		throw std::runtime_error {"Não foi possível setar número de versão"};
+		throw std::runtime_error {"It was not possible to set the version number"};
 	}
 	if(dados.szCountry.size() &&dados.szProvince.size() && dados.szCity.size()&&dados.szOrganization.size()&&dados.szCommon.size() )
 	{
@@ -208,13 +205,13 @@ std::string PKIRSA::GenerateRequest(const request_data& dados)
 	if(!ret_req)
 	{
 		X509_REQ_free(x509_req);
-		throw std::runtime_error {"Dados para requisição inválidos"};
+		throw std::runtime_error {"Invalid data to request certificate"};
 	}
 
 	out_request=BIO_new(BIO_s_mem());
 	if(out_request!=nullptr && PEM_write_bio_X509_REQ(out_request,x509_req))
 	{
-		//Serve para saber quantos bytes serão necessários
+
 		if(BIO_read_ex(out_request,nullptr,-1,&len)&&len>0)
 		{
 			request=new char[len];
@@ -230,7 +227,7 @@ std::string PKIRSA::GenerateRequest(const request_data& dados)
 	X509_REQ_free(x509_req);
 	if(!request_str.size())
 	{
-		throw std::runtime_error{"Não foi possível gerar requisição"};
+		throw std::runtime_error{"It was not possible generate the requesition of certificate"};
 	}
 	return request_str;
 }
@@ -243,17 +240,17 @@ void PKIRSA::SavePubKey(std::string file_pub_path)
 	BIO*bp_public = nullptr;
 	if(this->PubKey==nullptr)
 	{
-		throw std::runtime_error{"Chave Pública nula"};
+		throw std::runtime_error{"Public key is null"};
 	}
 	if(!file_pub_path.size())
 	{
-		throw std::runtime_error{"Caminho de arquivo inválido"};
+		throw std::runtime_error{"Invalid path"};
 	}
 	ok=((bp_public = BIO_new_file(file_pub_path.c_str(), "w+"))!=nullptr && PEM_write_bio_PUBKEY(bp_public,this->PubKey)>0);
 	BIO_free_all(bp_public);
 	if(!ok)
 	{
-		throw std::runtime_error{"Não foi possível armazenar chave"};
+		throw std::runtime_error{"It was not possible store the key"};
 	}
 }
 void PKIRSA::SavePrvKey(std::string file_prv_path)
@@ -262,18 +259,18 @@ void PKIRSA::SavePrvKey(std::string file_prv_path)
 	bool ok=false;;
 	if(PrvKey==nullptr)
 	{
-		throw std::runtime_error{"Chave privada nula"};
+		throw std::runtime_error{"Private key is null"};
 	}
 
 	if(!file_prv_path.size())
 	{
-		throw std::runtime_error{"Caminho de arquivo inválido"};
+		throw std::runtime_error{"Invalid path"};
 	}
 	ok=((bp_private = BIO_new_file(file_prv_path.c_str(), "w+"))!=nullptr && PEM_write_bio_PrivateKey(bp_private,this->PrvKey,NULL, NULL, 0, 0, NULL)>0);
 	BIO_free_all(bp_private);
 	if(!ok)
 	{
-		throw std::runtime_error{"Não foi possível armazenar chave"};
+		throw std::runtime_error{"It was not possible store the key"};
 	}
 }
 
@@ -334,7 +331,7 @@ std::string PKIRSA::SignMessage(std::string message)
 	{
 		OPENSSL_free(signature_aux);
 		signature_aux=nullptr;
-		throw std::runtime_error{"Não foi possível assinar a mensagem "+message};
+		throw std::runtime_error{"It was not possible sign "+message};
 	}
 	for(int index=0;index<length;index++)
 	{
@@ -365,7 +362,7 @@ std::string PKIRSA::EncryptMessage(const std::string& plain)
 {
 	if(!plain.size())
 	{
-		throw std::runtime_error{"Texto inválido para cifragem"};
+		throw std::runtime_error{"Plain text is empty"};
 	}
 	EVP_PKEY_CTX * params=nullptr;
 	size_t len=0,success=0;
@@ -391,7 +388,7 @@ std::string PKIRSA::EncryptMessage(const std::string& plain)
 	OPENSSL_free(encrypted_aux);
 	if(!encrypted.size())
 	{
-		throw std::runtime_error{"Erro em instanciar CTX RSA"};
+		throw std::runtime_error{"Error in CTX RSA"};
 	}
 	return encrypted;
 }
@@ -399,7 +396,7 @@ std::string PKIRSA::DecryptMessage(const std::string&encrypted)
 {
 	if(!encrypted.size())
 	{
-		throw std::runtime_error{"Texto inválido para cifragem"};
+		throw std::runtime_error{"Encrypted text is empty"};
 	}
 	EVP_PKEY_CTX * params=nullptr;
 	size_t len=0;
@@ -417,7 +414,6 @@ std::string PKIRSA::DecryptMessage(const std::string&encrypted)
 				{
 					plain.push_back(*(plain_aux+index));
 				}
-				//plain=std::string{plain_aux,success};
 			}
 		}
 	}
@@ -426,7 +422,7 @@ std::string PKIRSA::DecryptMessage(const std::string&encrypted)
 	params=nullptr;
 	if(!plain.size())
 	{
-		throw std::runtime_error{"Erro em instanciar CTX RSA"};
+		throw std::runtime_error{"Error in CTX RSA"};
 	}
 	return plain;
 }
@@ -458,7 +454,7 @@ std::string  PKIRSA::SavePrvKey()
 	prvkeystr_aux=nullptr;
 	if(!prvkeystr.size())
 	{
-		throw std::runtime_error{"Não foi possível salvar a chave privada em um String"};
+		throw std::runtime_error{"It was not possible convert the private key to string"};
 	}
 	return prvkeystr;
 }
@@ -486,7 +482,7 @@ std::string  PKIRSA::SavePubKey()
 	pubkeystr_aux=nullptr;
 	if(!pubkeystr.size())
 	{
-		throw std::runtime_error{"Não foi possível salvar a chave pública em um String"};
+		throw std::runtime_error{"It was not possible convert the public key to string"};
 	}
 	return pubkeystr;
 }
@@ -498,9 +494,9 @@ std::string PKIRSA::SelfSign(std::string request)
 	X509 *certificate=nullptr;
 	ASN1_INTEGER *aserial=nullptr;
 	size_t tamanho=0, escritos=0;
-	//X509V3_CTX ctx;
-//	bool ok=false;
+
 	BIO * bio_requisition=nullptr,* bio_certificate=nullptr;
+
 	if( (bio_requisition=BIO_new(BIO_s_mem()))!=nullptr && 	BIO_write(bio_requisition, request.data(), request.size()) &&
 			(requisition=PEM_read_bio_X509_REQ(bio_requisition,nullptr,nullptr,nullptr))!=nullptr )
 	{
@@ -548,7 +544,7 @@ std::string PKIRSA::SelfSign(std::string request)
 	{
 		return Certificado;
 	}
-	throw std::runtime_error{"Não foi possível gerar certificado auto-assinador"};
+	throw std::runtime_error{"It was not possible generate the auto-signed digital certificate"};
 }
 PKIRSA::~PKIRSA()
 {
@@ -556,6 +552,4 @@ PKIRSA::~PKIRSA()
 	PrvKey=nullptr;
 	EVP_PKEY_free(PubKey);
 	PubKey=nullptr;
-
-
 }
