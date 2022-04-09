@@ -13,7 +13,7 @@ void AesCFBMode::ConfigureKey(std::string newKey="")
 	unsigned char *key=nullptr;
 	if(newKey.empty())
 	{
-		key=new (std::nothrow)unsigned char[33]{};
+		key=new (std::nothrow) unsigned char[33]{};
 		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*32))
 		{
 			SecretKey.clear();
@@ -35,7 +35,7 @@ void AesCFBMode::ConfigureKey(std::string newKey="")
 
 		if(newKey.size()<32)
 		{
-			key=new (std::nothrow)unsigned char[32-newKey.size()];
+			key=new (std::nothrow) unsigned char[32-newKey.size()]{};
 			if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*(32-newKey.size())))
 			{
 				for(int index=0;index<(32-newKey.size());index++)
