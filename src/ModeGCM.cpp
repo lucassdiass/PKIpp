@@ -2,7 +2,7 @@
  * ModeGCM.cpp
  *
  *  Created on: 6 de jan de 2021
- *      Author: Lucas Vargas Dias
+ *      Author: Lucas Dias
  */
 #include "PKISymmetric.hpp"
 #include <openssl/rand.h>
@@ -14,7 +14,7 @@ void AesGCMMode::ConfigureKey(std::string newKey)
 	unsigned char *key=nullptr,*aux=nullptr;
 	if(newKey.empty())
 	{
-		key=new unsigned char[32];
+		key=new (std::nothrow) unsigned char[32]{};
 		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*32))
 		{
 			SecretKey.clear();
@@ -27,7 +27,7 @@ void AesGCMMode::ConfigureKey(std::string newKey)
 		}
 		else
 		{
-			throw std::runtime_error{"Nao foi possivel gerar chave"};
+			throw std::runtime_error{"It was not possible generate key"};
 		}
 	}
 	else
@@ -55,8 +55,7 @@ void AesGCMMode::ConfigureIV(std::string newIV)
 	unsigned char *iv=nullptr;
 	if(newIV.empty())
 	{
-		iv=new unsigned char[32];
-		std::memset(iv, 0x00,32);
+		iv=new (std::nothrow) unsigned char[32]{};
 		if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*32))
 		{
 			IV.clear();
@@ -69,7 +68,7 @@ void AesGCMMode::ConfigureIV(std::string newIV)
 		}
 		else
 		{
-			throw std::runtime_error{"Nao foi possivel gerar chave"};
+			throw std::runtime_error{"It was not possible generate IV"};
 		}
 	}
 	else
@@ -77,8 +76,8 @@ void AesGCMMode::ConfigureIV(std::string newIV)
 		IV=newIV;
 		if(newIV.size()<32)
 		{
-			iv=new unsigned char[32-IV.size()];
-			if(iv!=nullptr&&	RAND_bytes(iv, sizeof(unsigned char)*(32-IV.size())))
+			iv=new (std::nothrow) unsigned char[32-IV.size()]{};
+			if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*(32-IV.size())))
 			{
 				for(int index=0;index<(32-IV.size());index++)
 				{
@@ -95,7 +94,7 @@ std::string AesGCMMode::EncryptAuthMessage(std::string plain, std::string&encryp
 {
 	if(!plain.size())
 	{
-		throw std::runtime_error{"Texto inválido para cifragem"};
+		throw std::runtime_error{"Invalid plain text"};
 	}
 	std::string mac{};
 	int len=0,ciphertext_len=0;
@@ -105,15 +104,13 @@ std::string AesGCMMode::EncryptAuthMessage(std::string plain, std::string&encryp
 	unsigned char * encrypted_aux=nullptr;
 	try
 	{
-		//auto secret=GenerateSecret();
 		if((ctx = EVP_CIPHER_CTX_new())!=nullptr &&
 				EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) &&
 				EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV.size(), nullptr)&&
-				EVP_EncryptInit_ex(ctx,nullptr, nullptr, (unsigned char*)SecretKey.data(), (unsigned char*)IV.data()))// ( unsigned char *)SecretKey.data(), (unsigned char*) IV.data())>0)
+				EVP_EncryptInit_ex(ctx,nullptr, nullptr, (unsigned char*)SecretKey.data(), (unsigned char*)IV.data()))
 		{
-			//	len=EVP_CIPHER_block_size(EVP_aes_256_ecb());
 			len_aux=(float)plain.size()/(float)EVP_CIPHER_block_size(EVP_aes_256_gcm());
-			//len=len*EVP_CIPHER_block_size(EVP_aes_256_ecb());
+
 			len=len_aux;
 			if(len_aux!=(float)len)
 			{
@@ -123,7 +120,7 @@ std::string AesGCMMode::EncryptAuthMessage(std::string plain, std::string&encryp
 			{
 				len=(len*EVP_CIPHER_block_size(EVP_aes_256_gcm()));
 			}
-			//	len=0;
+
 			if(
 					(encrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(len) ))!=nullptr &&
 					EVP_EncryptUpdate(ctx, encrypted_aux, &len, (unsigned char*)plain.data(), plain.size())>0 )
@@ -158,7 +155,7 @@ std::string AesGCMMode::EncryptAuthMessage(std::string plain, std::string&encryp
 	}
 	if(!mac.size())
 	{
-		std::runtime_error{"Não foi possível cifrar e autenticar a mensagem"};
+		std::runtime_error{"It was not possible encrypt and authenticate the message"};
 	}
 	return mac;
 }
@@ -166,7 +163,7 @@ bool AesGCMMode::DecryptVerifyMessage(std::string encrypted,  std::string mac, s
 {
 	if(!encrypted.size())
 	{
-		throw std::runtime_error{"Texto inválido para decifragem"};
+		throw std::runtime_error{"Invalid encrypted text"};
 	}
 	int len=0,plen=0;;
 	EVP_CIPHER_CTX *ctx=nullptr;
@@ -181,7 +178,6 @@ bool AesGCMMode::DecryptVerifyMessage(std::string encrypted,  std::string mac, s
 			EVP_DecryptInit_ex(ctx,nullptr, nullptr, (unsigned char*)SecretKey.data(), (unsigned char*)IV.data()))
 		{
 
-			//encrypted.size();//EVP_CIPHER_block_size(EVP_aes_256_ecb());
 			plen=len;
 			decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(encrypted.size()+mac.size()));
 			if(decrypted_aux!=nullptr&& EVP_DecryptUpdate(ctx, decrypted_aux, &len, (unsigned char*)encrypted.data(), encrypted.size())>0 &&

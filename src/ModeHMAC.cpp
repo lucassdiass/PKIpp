@@ -2,7 +2,7 @@
  * ModeHMAC.cpp
  *
  *  Created on: 21 de jan de 2021
- *      Author: Lucas Vargas Dias
+ *      Author: Lucas Dias
  */
 
 
@@ -18,7 +18,7 @@ void HMACMode::ConfigureKey(std::string newKey="")
 	unsigned char *key=nullptr,*aux=nullptr;
 	if(newKey.empty())
 	{
-		key=new unsigned char[32];
+		key=new (std::nothrow) unsigned char[32]{};
 		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*32))
 		{
 			SecretKey.clear();
@@ -33,7 +33,7 @@ void HMACMode::ConfigureKey(std::string newKey="")
 		{
 			delete []key;
 			key=nullptr;
-			throw std::runtime_error{"Nao foi possivel gerar chave"};
+			throw std::runtime_error{"It was not possible generate key"};
 		}
 	}
 	else
@@ -41,7 +41,7 @@ void HMACMode::ConfigureKey(std::string newKey="")
 		SecretKey=newKey;
 		if(newKey.size()<32)
 		{
-			key=new unsigned char[32-newKey.size()];
+			key=new (std::nothrow) unsigned char[32-newKey.size()]{};
 			if(key!=nullptr&&	RAND_bytes(key, sizeof(unsigned char)*(32-newKey.size())))
 			{
 				for(int index=0;index<(32-newKey.size());index++)
@@ -58,23 +58,20 @@ void HMACMode::ConfigureKey(std::string newKey="")
 
 bool HMACMode::VerifyMAC(std::string text, std::string mac)
 {
-	std::string mac_aux;
-	if(text.size()&&mac.size())
+	try
 	{
-		try
+		std::string mac_aux{GenerateMAC(text)};
+		if(mac_aux.size()==mac.size() && !std::memcmp(mac.data(), mac_aux.data(), mac.size()))
 		{
-			mac_aux=GenerateMAC(text);
-			if(mac_aux.size()==mac.size() && !strncmp(mac_aux.data(), mac.data(),mac.size()))
-			{
-				return true;
-			}
+			return true;
 		}
-		catch(...)
-		{
-			return false;
-		}
-
 	}
+	catch(...)
+	{
+		return false;
+	}
+
+
 
 	return false;
 }
@@ -86,23 +83,21 @@ std::string  HMACMode::GenerateMAC(std::string text)
 	unsigned char *val=nullptr;
 	const EVP_MD* md =  EVP_sha256();
 	EVP_MD_CTX*ctx=nullptr;
-	// EVP_sha256()
 	skey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, (const unsigned char*) SecretKey.data(),  SecretKey.size());
 
 	if(skey!=nullptr && (ctx = EVP_MD_CTX_create())!=NULL && md != NULL && EVP_DigestInit_ex(ctx, md, NULL)==1  &&
-			EVP_DigestSignInit(ctx, NULL, md, NULL, skey) &&  EVP_DigestSignUpdate(ctx, text.data(), text.size()) && EVP_DigestSignFinal(ctx, NULL, &req))
+			EVP_DigestSignInit(ctx, NULL, md, NULL, skey) &&  EVP_DigestSignUpdate(ctx, text.data(), text.size()) &&
+			EVP_DigestSignFinal(ctx, NULL, &req))
 	{
-		//*auxiliar_vlen= req;
 		val = (unsigned char *) OPENSSL_malloc(sizeof(unsigned char)*req);
 		if(val!=nullptr &&  EVP_DigestSignFinal(ctx, val, &auxiliar_len))
 		{
-			for(int index=0;index<req;index++)
+			for(int index=0;index<auxiliar_len;index++)
 			{
 				mac.push_back(*(val+index));
 			}
 		}
 	}
-	//	isOk=mac.size();
 	EVP_PKEY_free(skey);
 	skey=nullptr;
 	EVP_MD_CTX_free(ctx);
@@ -113,6 +108,6 @@ std::string  HMACMode::GenerateMAC(std::string text)
 	{
 		return mac;
 	}
-	throw std::runtime_error{"Não foi possível gerar HMAC da mensagem "+text};
+	throw std::runtime_error{"It was not possible generate HMAC of"+text};
 }
 
