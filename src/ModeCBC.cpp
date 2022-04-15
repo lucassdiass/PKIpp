@@ -2,7 +2,7 @@
  * CBC.cpp
  *
  *  Created on: 5 de jan de 2021
- *      Author: root
+ *      Author: Lucas Dias
  */
 
 
@@ -15,7 +15,7 @@ void AesCBCMode::ConfigureKey(std::string newKey="")
 	unsigned char *key=nullptr,*aux=nullptr;
 	if(newKey.empty())
 	{
-		key=new unsigned char[33];
+		key=new (std::nothrow) unsigned char[32]{};
 		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*32))
 		{
 			SecretKey.clear();
@@ -28,7 +28,7 @@ void AesCBCMode::ConfigureKey(std::string newKey="")
 		}
 		else
 		{
-			throw std::runtime_error{"Nao foi possivel gerar chave"};
+			throw std::runtime_error{"It was not possible generate key"};
 		}
 	}
 	else
@@ -37,7 +37,7 @@ void AesCBCMode::ConfigureKey(std::string newKey="")
 
 		if(newKey.size()<32)
 		{
-			key=new unsigned char[32-newKey.size()];
+			key=new (std::nothrow) unsigned char[32-newKey.size()]{};
 			if(key!=nullptr&&	RAND_bytes(key, sizeof(unsigned char)*(32-newKey.size())))
 			{
 				for(int index=0;index<(32-newKey.size());index++)
@@ -55,7 +55,7 @@ void AesCBCMode::ConfigureIV(std::string newIV="")
 	unsigned char *iv=nullptr;
 	if(newIV.empty())
 	{
-		iv=new unsigned char[32];
+		iv=new (std::nothrow) unsigned char[32]{};
 		if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*32))
 		{
 			IV.clear();
@@ -68,7 +68,7 @@ void AesCBCMode::ConfigureIV(std::string newIV="")
 		}
 		else
 		{
-			throw std::runtime_error{"Nao foi possivel gerar chave"};
+			throw std::runtime_error{"It was not possible generate IV"};
 		}
 	}
 	else
@@ -81,7 +81,7 @@ std::string AesCBCMode::EncryptMessage(const std::string& plain)
 {
 	if(!plain.size())
 	{
-		throw std::runtime_error{"Texto inválido para cifragem"};
+		throw std::runtime_error{"Invalid plain text"};
 	}
 	std::string encrypted{};
 	int len=0,ciphertext_len=0;
@@ -90,14 +90,11 @@ std::string AesCBCMode::EncryptMessage(const std::string& plain)
 	unsigned char * encrypted_aux=nullptr;
 	try
 	{
-		//auto secret=GenerateSecret();
 		if((ctx = EVP_CIPHER_CTX_new())!=nullptr)
 		{
 			if(EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, ( unsigned char *)SecretKey.data(), (unsigned char*) IV.data())>0)
 			{
-				//	len=EVP_CIPHER_block_size(EVP_aes_256_ecb());
 				len_aux=(float)plain.size()/(float)EVP_CIPHER_block_size(EVP_aes_256_cbc());
-				//len=len*EVP_CIPHER_block_size(EVP_aes_256_ecb());
 				len=len_aux;
 				if(len_aux!=(float)len)
 				{
@@ -138,7 +135,7 @@ std::string AesCBCMode::EncryptMessage(const std::string& plain)
 	}
 	if(!encrypted.size())
 	{
-		std::runtime_error{"Não foi possível cifrar a mensagem"};
+		std::runtime_error{"It was not possible encrypt the message"};
 	}
 	return encrypted;
 }
@@ -146,7 +143,7 @@ std::string AesCBCMode::DecryptMessage(const std::string&encrypted)
 {
 	if(!encrypted.size())
 	{
-		throw std::runtime_error{"Texto inválido para decifragem"};
+		throw std::runtime_error{"Invalid encrypted text"};
 	}
 	std::string plain{};
 	int len=0,plen=0;;
@@ -187,7 +184,7 @@ std::string AesCBCMode::DecryptMessage(const std::string&encrypted)
 	}
 	if(!plain.size())
 	{
-		std::runtime_error{"Não foi possível cifrar a mensagem"};
+		throw std::runtime_error{"It was not possible decrypt the message"};
 	}
 	return plain;
 }
