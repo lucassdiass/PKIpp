@@ -101,6 +101,102 @@ TEST_F(ConfidentialityTester, ECBModeOkSize10000)
 	EXPECT_EQ(plain, aux);
 }
 */
+TEST_F(ConfidentialityTester, CBCModeOkSize10)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(10);
+	std::shared_ptr<PKI::Symmetric::AesCBCMode> cbc(new PKI::Symmetric::AesCBCMode);
+	EXPECT_NO_THROW(cbc->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(cbc->ConfigureIV(std::string{}));
+	enc = cbc;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	EXPECT_EQ(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, CBCModeErrorSize10)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(10);
+	std::shared_ptr<PKI::Symmetric::AesCBCMode> cbc(new PKI::Symmetric::AesCBCMode);
+	EXPECT_NO_THROW(cbc->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(cbc->ConfigureIV(std::string{}));
+	enc = cbc;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	encrypted[0] = encrypted[0] + 1;
+	//EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
+	EXPECT_THROW(enc->DecryptMessage(encrypted), std::runtime_error);
+
+}
+TEST_F(ConfidentialityTester, CBCModeOkSize100)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(100);
+	std::shared_ptr<PKI::Symmetric::AesCBCMode> cbc(new PKI::Symmetric::AesCBCMode);
+	EXPECT_NO_THROW(cbc->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(cbc->ConfigureIV(std::string{}));
+	enc = cbc;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	EXPECT_EQ(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, CBCModeErrorSize100)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(100);
+	std::shared_ptr<PKI::Symmetric::AesCBCMode> cbc(new PKI::Symmetric::AesCBCMode);
+	EXPECT_NO_THROW(cbc->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(cbc->ConfigureIV(std::string{}));
+	enc = cbc;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	encrypted[0] = encrypted[0] + 1;
+	EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, CBCModeOkSize1000)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(1000);
+	std::shared_ptr<PKI::Symmetric::AesCBCMode> cbc(new PKI::Symmetric::AesCBCMode);
+	EXPECT_NO_THROW(cbc->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(cbc->ConfigureIV(std::string{}));
+	enc = cbc;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	EXPECT_EQ(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, CBCModeErrorSize1000)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(1000);
+	std::shared_ptr<PKI::Symmetric::AesCBCMode> cbc(new PKI::Symmetric::AesCBCMode);
+	EXPECT_NO_THROW(cbc->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(cbc->ConfigureIV(std::string{}));
+	enc = cbc;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	encrypted[0] = encrypted[0] + 1;
+	EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
+}
+/*
+TEST_F(ConfidentialityTester, CBCModeOkSize10000)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(10000);
+	std::shared_ptr<PKI::Symmetric::AesCBCMode> cbc(new PKI::Symmetric::AesCBCMode);
+	EXPECT_NO_THROW(cbc->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(cbc->ConfigureIV(std::string{}));
+	enc = cbc;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	EXPECT_EQ(plain, enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, CBCModeErrorSize10000)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(10);
+	std::shared_ptr<PKI::Symmetric::AesCBCMode> cbc(new PKI::Symmetric::AesCBCMode);
+	EXPECT_NO_THROW(cbc->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(cbc->ConfigureIV(std::string{}));
+	enc = cbc;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	encrypted[0] = encrypted[0] + 1;
+	EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
+}
+*/
 TEST_F(ConfidentialityTester, CTRModeOkSize10)
 {
 	std::string plain{}, encrypted{};
@@ -108,7 +204,6 @@ TEST_F(ConfidentialityTester, CTRModeOkSize10)
 	std::shared_ptr<PKI::Symmetric::AesCTRMode> ctr(new PKI::Symmetric::AesCTRMode);
 	EXPECT_NO_THROW(ctr->ConfigureKey(std::string{}));
 	EXPECT_NO_THROW(ctr->ConfigureIV(std::string{}));
-
 	enc = ctr;
 	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
 	EXPECT_EQ(plain,  enc->DecryptMessage(encrypted));
