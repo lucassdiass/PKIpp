@@ -83,7 +83,7 @@ std::string AesECBMode::EncryptMessage(const std::string& plain)
 				)
 				{
 
-					if(ciphertext_len!=len && EVP_EncryptFinal_ex(ctx, encrypted_aux + ciphertext_len, &len)>0)
+					if(EVP_EncryptFinal_ex(ctx, encrypted_aux + ciphertext_len, &len)>0)
 					{
 						ciphertext_len+=len;
 					}
@@ -126,7 +126,7 @@ std::string AesECBMode::DecryptMessage(const std::string&encrypted)
 			if(EVP_DecryptInit_ex(ctx, EVP_aes_256_ecb(), nullptr, ( unsigned char *)SecretKey.data(), nullptr)>0)
 			{
 				len=0;
-				decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(1+encrypted.size()) );
+				decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(encrypted.size()) );
 				if(decrypted_aux!=nullptr&& EVP_DecryptUpdate(ctx, decrypted_aux, &len, (unsigned char*)encrypted.data(), encrypted.size())>0
 				)
 				{
@@ -154,7 +154,7 @@ std::string AesECBMode::DecryptMessage(const std::string&encrypted)
 	}
 	if(!plain.size())
 	{
-		std::runtime_error{"It was not possible decrypt the message"};
+		throw std::runtime_error{"It was not possible decrypt the message"};
 	}
 	return plain;
 }
