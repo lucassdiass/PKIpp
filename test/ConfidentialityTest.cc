@@ -197,6 +197,100 @@ TEST_F(ConfidentialityTester, CBCModeErrorSize10000)
 	EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
 }
 */
+
+TEST_F(ConfidentialityTester, OFBModeOkSize10)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(10);
+	std::shared_ptr<PKI::Symmetric::AesOFBMode> ofb(new PKI::Symmetric::AesOFBMode);
+	EXPECT_NO_THROW(ofb->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(ofb->ConfigureIV(std::string{}));
+	enc = ofb;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	EXPECT_EQ(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, OFBModeErrorSize10)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(10);
+	std::shared_ptr<PKI::Symmetric::AesOFBMode> ofb(new PKI::Symmetric::AesOFBMode);
+	EXPECT_NO_THROW(ofb->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(ofb->ConfigureIV(std::string{}));
+	enc = ofb;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	encrypted[0] = encrypted[0] + 1;
+	EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, OFBModeOkSize100)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(100);
+	std::shared_ptr<PKI::Symmetric::AesOFBMode> ofb(new PKI::Symmetric::AesOFBMode);
+	EXPECT_NO_THROW(ofb->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(ofb->ConfigureIV(std::string{}));
+	enc = ofb;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	EXPECT_EQ(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, OFBModeErrorSize100)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(100);
+	std::shared_ptr<PKI::Symmetric::AesOFBMode> ofb(new PKI::Symmetric::AesOFBMode);
+	EXPECT_NO_THROW(ofb->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(ofb->ConfigureIV(std::string{}));
+	enc = ofb;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	encrypted[0] = encrypted[0] + 1;
+	EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, OFBModeOkSize1000)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(1000);
+	std::shared_ptr<PKI::Symmetric::AesOFBMode> ofb(new PKI::Symmetric::AesOFBMode);
+	EXPECT_NO_THROW(ofb->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(ofb->ConfigureIV(std::string{}));
+	enc = ofb;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	EXPECT_EQ(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, OFBModeErrorSize1000)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(1000);
+	std::shared_ptr<PKI::Symmetric::AesOFBMode> ofb(new PKI::Symmetric::AesOFBMode);
+	EXPECT_NO_THROW(ofb->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(ofb->ConfigureIV(std::string{}));
+	enc = ofb;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	encrypted[0] = encrypted[0] + 1;
+	EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, OFBModeOkSize10000)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(10000);
+	std::shared_ptr<PKI::Symmetric::AesOFBMode> ofb(new PKI::Symmetric::AesOFBMode);
+	EXPECT_NO_THROW(ofb->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(ofb->ConfigureIV(std::string{}));
+	enc = ofb;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	EXPECT_EQ(plain,  enc->DecryptMessage(encrypted));
+}
+TEST_F(ConfidentialityTester, OFBModeErrorSize10000)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(10000);
+	std::shared_ptr<PKI::Symmetric::AesOFBMode> ofb(new PKI::Symmetric::AesOFBMode);
+	EXPECT_NO_THROW(ofb->ConfigureKey(std::string{}));
+	EXPECT_NO_THROW(ofb->ConfigureIV(std::string{}));
+	enc = ofb;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	encrypted[0] = encrypted[0] + 1;
+	EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
+}
+
 TEST_F(ConfidentialityTester, CTRModeOkSize10)
 {
 	std::string plain{}, encrypted{};
