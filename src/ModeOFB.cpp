@@ -53,13 +53,16 @@ void AesOFBMode::ConfigureIV(std::string newIV="")
 	unsigned char *iv=nullptr;
 	if(newIV.empty())
 	{
-		iv=new (std::nothrow) unsigned char[256]{};
-		if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*256))
+		iv=new (std::nothrow) unsigned char[32]{};
+		if(iv!=nullptr)
 		{
-			IV.clear();
-			for(int index=0;index<257;index++)
+			if(RAND_bytes(iv, sizeof(unsigned char)*32))
 			{
-				IV.push_back(iv[index]);
+				IV.clear();
+				for(int index=0;index<257;index++)
+				{
+					IV.push_back(iv[index]);
+				}
 			}
 			delete []iv;
 			iv=nullptr;
