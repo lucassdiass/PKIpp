@@ -59,7 +59,7 @@ void AesOFBMode::ConfigureIV(std::string newIV="")
 			if(RAND_bytes(iv, sizeof(unsigned char)*32))
 			{
 				IV.clear();
-				for(int index=0;index<257;index++)
+				for(int index=0;index<32;index++)
 				{
 					IV.push_back(iv[index]);
 				}

@@ -53,11 +53,11 @@ void AesCFBMode::ConfigureIV(std::string newIV="")
 	unsigned char *iv=nullptr;
 	if(newIV.empty())
 	{
-		iv = new (std::nothrow) unsigned char[257]{};
-		if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*256))
+		iv = new (std::nothrow) unsigned char[32]{};
+		if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*32))
 		{
 			IV.clear();
-			for(int index=0;index<257;index++)
+			for(int index=0;index<32;index++)
 			{
 				IV.push_back(iv[index]);
 			}
