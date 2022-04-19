@@ -42,7 +42,7 @@ void HMACMode::ConfigureKey(std::string newKey="")
 		if(newKey.size()<32)
 		{
 			key=new (std::nothrow) unsigned char[32-newKey.size()]{};
-			if(key!=nullptr&&	RAND_bytes(key, sizeof(unsigned char)*(32-newKey.size())))
+			if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*(32-newKey.size())))
 			{
 				for(int index=0;index<(32-newKey.size());index++)
 				{
@@ -102,7 +102,7 @@ std::string  HMACMode::GenerateMAC(std::string text)
 	skey=nullptr;
 	EVP_MD_CTX_free(ctx);
 	ctx=nullptr;
-	delete []val;
+	OPENSSL_free(val);
 	val=nullptr;
 	if(mac.size())
 	{
