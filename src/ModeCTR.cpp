@@ -135,7 +135,7 @@ std::string AesCTRMode::EncryptMessage(const std::string&plain)
 	}
 	if(!encrypted.size())
 	{
-		std::runtime_error{"It was not possible encrypt the message"};
+		throw std::runtime_error{"It was not possible encrypt the message"};
 	}
 	return encrypted;
 }
