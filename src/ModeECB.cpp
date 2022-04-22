@@ -54,7 +54,8 @@ std::string AesECBMode::EncryptMessage(const std::string& plain)
 	{
 		throw std::runtime_error{"Invalid plain text"};
 	}
-	std::string encrypted{};
+
+	std::string encrypted{}, plain_aux{plain};
 	int len=0,ciphertext_len=0;
 	float len_aux=0;
 	EVP_CIPHER_CTX *ctx=nullptr;
@@ -63,14 +64,18 @@ std::string AesECBMode::EncryptMessage(const std::string& plain)
 	{
 		if((ctx = EVP_CIPHER_CTX_new())!=nullptr)
 		{
-			if(EVP_EncryptInit_ex(ctx, EVP_aes_256_ecb(), nullptr, ( unsigned char *)SecretKey.data(), nullptr)>0)
+			if(EVP_EncryptInit_ex(ctx, EVP_aes_256_ecb(), nullptr, ( unsigned char *)SecretKey.data(), nullptr)>0
+					&& EVP_CIPHER_CTX_set_padding(ctx, 0))
 			{
 				len_aux=(float)plain.size()/(float)EVP_CIPHER_block_size(EVP_aes_256_ecb());
-
 				len=len_aux;
 				if(len_aux!=(float)len)
 				{
-					len=(len*EVP_CIPHER_block_size(EVP_aes_256_ecb()))  +    EVP_CIPHER_block_size(EVP_aes_256_ecb());
+					len=(len*EVP_CIPHER_block_size(EVP_aes_256_ecb())) + EVP_CIPHER_block_size(EVP_aes_256_ecb());
+					while(plain_aux.size() !=  len)
+					{
+						plain_aux.push_back('\0');
+					}
 				}
 				else
 				{
@@ -79,13 +84,14 @@ std::string AesECBMode::EncryptMessage(const std::string& plain)
 				encrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(len) );
 
 				if(encrypted_aux!=nullptr &&
-						EVP_EncryptUpdate(ctx, encrypted_aux, &ciphertext_len, (unsigned char*)plain.data(), plain.size())>0
+						EVP_EncryptUpdate(ctx, encrypted_aux, &ciphertext_len, (unsigned char*)plain_aux.data(), plain_aux.size())>0
 				)
 				{
-
-					if(EVP_EncryptFinal_ex(ctx, encrypted_aux + ciphertext_len, &len)>0)
+					if(EVP_EncryptFinal(ctx, encrypted_aux+ciphertext_len, &len)>0)
 					{
-						ciphertext_len+=len;
+						if(len != ciphertext_len) {
+							ciphertext_len+=len;
+						}
 					}
 					for(int index=0;index<ciphertext_len;index++)
 					{
@@ -105,7 +111,7 @@ std::string AesECBMode::EncryptMessage(const std::string& plain)
 	}
 	if(!encrypted.size())
 	{
-		std::runtime_error{"It was not possible encrypt the message"};
+		throw std::runtime_error{"It was not possible encrypt the message"};
 	}
 	return encrypted;
 }
@@ -123,24 +129,28 @@ std::string AesECBMode::DecryptMessage(const std::string&encrypted)
 	{
 		if((ctx = EVP_CIPHER_CTX_new())!=nullptr)
 		{
-			if(EVP_DecryptInit_ex(ctx, EVP_aes_256_ecb(), nullptr, ( unsigned char *)SecretKey.data(), nullptr)>0)
+			if(EVP_DecryptInit_ex(ctx, EVP_aes_256_ecb(), nullptr, ( unsigned char *)SecretKey.data(), nullptr)>0
+					&& EVP_CIPHER_CTX_set_padding(ctx, 0))
 			{
-				len=0;
-				decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(encrypted.size()) );
+				decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*encrypted.size() );
+				len = 0;
 				if(decrypted_aux!=nullptr&& EVP_DecryptUpdate(ctx, decrypted_aux, &len, (unsigned char*)encrypted.data(), encrypted.size())>0
 				)
 				{
 					plen=len;
-					if(EVP_DecryptFinal_ex(ctx, decrypted_aux + (len), &len)>0)
+					if(EVP_DecryptFinal_ex(ctx, decrypted_aux, &len)>0)
 					{
 						plen+=len;
-						for(int index=0;index<plen;index++)
-						{
-							plain.push_back(*(decrypted_aux+index));
-						}
+					}
+					else {
+						plen = 0;
+					}
+					for(int index=0;index<plen && *(decrypted_aux+index) != '\0';index++)
+					{
+						plain.push_back(*(decrypted_aux+index));
 					}
 				}
-				free(decrypted_aux);
+				OPENSSL_free(decrypted_aux);
 				decrypted_aux=nullptr;
 			}
 		}
