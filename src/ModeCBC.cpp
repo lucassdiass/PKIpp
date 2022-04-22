@@ -83,7 +83,7 @@ std::string AesCBCMode::EncryptMessage(const std::string& plain)
 	{
 		throw std::runtime_error{"Invalid plain text"};
 	}
-	std::string encrypted{};
+	std::string encrypted{}, plain_aux{plain};
 	int len=0,ciphertext_len=0;
 	float len_aux=0;
 	EVP_CIPHER_CTX *ctx=nullptr;
@@ -92,13 +92,18 @@ std::string AesCBCMode::EncryptMessage(const std::string& plain)
 	{
 		if((ctx = EVP_CIPHER_CTX_new())!=nullptr)
 		{
-			if(EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, ( unsigned char *)SecretKey.data(), (unsigned char*) IV.data())>0)
+			if(EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, ( unsigned char *)SecretKey.data(), (unsigned char*) IV.data())>0
+					&& EVP_CIPHER_CTX_set_padding(ctx, 0))
 			{
 				len_aux=(float)plain.size()/(float)EVP_CIPHER_block_size(EVP_aes_256_cbc());
 				len=len_aux;
 				if(len_aux!=(float)len)
 				{
 					len=(len*EVP_CIPHER_block_size(EVP_aes_256_cbc()))  +    EVP_CIPHER_block_size(EVP_aes_256_cbc());
+					while(plain_aux.size() !=  len)
+					{
+						plain_aux.push_back('\0');
+					}
 				}
 				else
 				{
@@ -108,7 +113,7 @@ std::string AesCBCMode::EncryptMessage(const std::string& plain)
 				len=0;
 
 				if(encrypted_aux!=nullptr &&
-						EVP_EncryptUpdate(ctx, encrypted_aux, &len, (unsigned char*)plain.data(), plain.size())>0
+						EVP_EncryptUpdate(ctx, encrypted_aux, &len, (unsigned char*)plain_aux.data(), plain_aux.size())>0
 				)
 				{
 					ciphertext_len=len;
@@ -153,18 +158,19 @@ std::string AesCBCMode::DecryptMessage(const std::string&encrypted)
 	{
 		if((ctx = EVP_CIPHER_CTX_new())!=nullptr)
 		{
-			if(EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, ( unsigned char *)SecretKey.data(), (unsigned char*) IV.data())>0)
+			if(EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, ( unsigned char *)SecretKey.data(), (unsigned char*) IV.data())>0
+					&& EVP_CIPHER_CTX_set_padding(ctx, 0))
 			{
-				len=0;//encrypted.size();//EVP_CIPHER_block_size(EVP_aes_256_ecb());
+				len=0;
 				decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(1+encrypted.size()) );
-				if(decrypted_aux!=nullptr&& EVP_DecryptUpdate(ctx, decrypted_aux, &len, (unsigned char*)encrypted.data(), encrypted.size())>0
-				)
+				if(decrypted_aux!=nullptr
+						&& EVP_DecryptUpdate(ctx, decrypted_aux, &len, (unsigned char*)encrypted.data(), encrypted.size())>0)
 				{
 					plen=len;
 					if(EVP_DecryptFinal_ex(ctx, decrypted_aux + (len), &len)>0)
 					{
 						plen+=len;
-						for(int index=0;index<plen;index++)
+						for(int index=0;index<plen  && *(decrypted_aux+index) != '\0';index++)
 						{
 							plain.push_back(*(decrypted_aux+index));
 						}
