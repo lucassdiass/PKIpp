@@ -43,7 +43,7 @@ TEST_F(ConfidentialityTester, ECBModeErrorSize10)
 	enc = ecb;
 	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
 	encrypted[0] = encrypted[0] + 1;
-	EXPECT_THROW(enc->DecryptMessage(encrypted), std::runtime_error);
+	EXPECT_NE(plain, enc->DecryptMessage(encrypted));
 }
 TEST_F(ConfidentialityTester, ECBModeOkSize100)
 {
@@ -87,8 +87,7 @@ TEST_F(ConfidentialityTester, ECBModeErrorSize1000)
 	encrypted[0] = encrypted[0] + 1;
 	EXPECT_NE(plain, enc->DecryptMessage(encrypted));
 }
-/*
-This test does not work correctly.
+
 TEST_F(ConfidentialityTester, ECBModeOkSize10000)
 {
 	std::string plain{}, encrypted{};
@@ -100,7 +99,17 @@ TEST_F(ConfidentialityTester, ECBModeOkSize10000)
 	std::string aux = enc->DecryptMessage(encrypted);
 	EXPECT_EQ(plain, aux);
 }
-*/
+TEST_F(ConfidentialityTester, ECBModeErrorSize10000)
+{
+	std::string plain{}, encrypted{};
+	plain = generateString(10000);
+	std::shared_ptr<PKI::Symmetric::AesECBMode> ecb  (new PKI::Symmetric::AesECBMode);
+	EXPECT_NO_THROW(ecb->ConfigureKey(std::string{}));
+	enc = ecb;
+	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
+	encrypted[0] = encrypted[0] + 1;
+	EXPECT_NE(plain, enc->DecryptMessage(encrypted));
+}
 TEST_F(ConfidentialityTester, CBCModeOkSize10)
 {
 	std::string plain{}, encrypted{};
@@ -124,7 +133,6 @@ TEST_F(ConfidentialityTester, CBCModeErrorSize10)
 	encrypted[0] = encrypted[0] + 1;
 	//EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
 	EXPECT_THROW(enc->DecryptMessage(encrypted), std::runtime_error);
-
 }
 TEST_F(ConfidentialityTester, CBCModeOkSize100)
 {
@@ -203,8 +211,8 @@ TEST_F(ConfidentialityTester, OFBModeOkSize10)
 	std::string plain{}, encrypted{};
 	plain = generateString(10);
 	std::shared_ptr<PKI::Symmetric::AesOFBMode> ofb(new PKI::Symmetric::AesOFBMode);
+	EXPECT_NO_THROW(ofb->ConfigureIV(""));
 	EXPECT_NO_THROW(ofb->ConfigureKey(std::string{}));
-	EXPECT_NO_THROW(ofb->ConfigureIV(std::string{}));
 	enc = ofb;
 	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
 	EXPECT_EQ(plain,  enc->DecryptMessage(encrypted));
@@ -290,7 +298,6 @@ TEST_F(ConfidentialityTester, OFBModeErrorSize10000)
 	encrypted[0] = encrypted[0] + 1;
 	EXPECT_NE(plain,  enc->DecryptMessage(encrypted));
 }
-
 TEST_F(ConfidentialityTester, CTRModeOkSize10)
 {
 	std::string plain{}, encrypted{};
