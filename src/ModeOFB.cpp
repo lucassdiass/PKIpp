@@ -10,16 +10,19 @@ using namespace PKI::Symmetric;
 
 void AesOFBMode::ConfigureKey(std::string newKey="")
 {
-	unsigned char *key=nullptr,*aux=nullptr;
+	unsigned char *key=nullptr;
 	if(newKey.empty())
 	{
-		key=new (std::nothrow) unsigned char[32]{};
-		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*32))
+		key=new (std::nothrow) unsigned char[EVP_CIPHER_key_length(EVP_aes_256_ofb())]{};
+		if(key!=nullptr)
 		{
-			SecretKey.clear();
-			for(int index=0;index<32;index++)
+			if(RAND_bytes(key, sizeof(unsigned char)*EVP_CIPHER_key_length(EVP_aes_256_ofb())))
 			{
-				SecretKey.push_back(key[index]);
+				SecretKey.clear();
+				for(int index=0;index<EVP_CIPHER_key_length(EVP_aes_256_ofb());index++)
+				{
+					SecretKey.push_back(key[index]);
+				}
 			}
 			delete []key;
 			key=nullptr;
@@ -33,18 +36,18 @@ void AesOFBMode::ConfigureKey(std::string newKey="")
 	{
 		SecretKey=newKey;
 
-		if(newKey.size()<32)
+		if(newKey.size()<EVP_CIPHER_key_length(EVP_aes_256_ofb()))
 		{
-			key=new  (std::nothrow) unsigned char[32-newKey.size()]{};
-			if(key!=nullptr&&	RAND_bytes(key, sizeof(unsigned char)*(32-newKey.size())))
+			key=new  (std::nothrow) unsigned char[EVP_CIPHER_key_length(EVP_aes_256_ofb())-newKey.size()]{};
+			if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*(EVP_CIPHER_key_length(EVP_aes_256_ofb())-newKey.size())))
 			{
-				for(int index=0;index<(32-newKey.size());index++)
+				for(int index=0;index<(EVP_CIPHER_key_length(EVP_aes_256_ofb())-newKey.size());index++)
 				{
 					SecretKey.push_back(key[index]);
 				}
-				delete []key;
-				key=nullptr;
 			}
+			delete []key;
+			key=nullptr;
 		}
 	}
 }
@@ -53,13 +56,13 @@ void AesOFBMode::ConfigureIV(std::string newIV="")
 	unsigned char *iv=nullptr;
 	if(newIV.empty())
 	{
-		iv=new (std::nothrow) unsigned char[32]{};
+		iv=new (std::nothrow) unsigned char[EVP_CIPHER_iv_length(EVP_aes_256_ofb())]{};
 		if(iv!=nullptr)
 		{
-			if(RAND_bytes(iv, sizeof(unsigned char)*32))
+			if(RAND_bytes(iv, sizeof(unsigned char)*EVP_CIPHER_iv_length(EVP_aes_256_ofb())))
 			{
 				IV.clear();
-				for(int index=0;index<32;index++)
+				for(int index=0;index<EVP_CIPHER_iv_length(EVP_aes_256_ofb());index++)
 				{
 					IV.push_back(iv[index]);
 				}
@@ -75,6 +78,19 @@ void AesOFBMode::ConfigureIV(std::string newIV="")
 	else
 	{
 		IV=newIV;
+		if(IV.size()<EVP_CIPHER_iv_length(EVP_aes_256_ofb()))
+		{
+			iv=new (std::nothrow) unsigned char[EVP_CIPHER_iv_length(EVP_aes_256_cfb128())-newIV.size()]{};
+			if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*(EVP_CIPHER_iv_length(EVP_aes_256_cfb128())-newIV.size())))
+			{
+				for(int index=0;index<(EVP_CIPHER_iv_length(EVP_aes_256_cfb128())-newIV.size());index++)
+				{
+					IV.push_back(iv[index]);
+				}
+			}
+			delete []iv;
+			iv=nullptr;
+		}
 	}
 }
 
@@ -157,7 +173,7 @@ std::string AesOFBMode::DecryptMessage(const std::string&encrypted)
 			if(EVP_DecryptInit_ex(ctx, EVP_aes_256_ofb(), nullptr, ( unsigned char *)SecretKey.data(), (unsigned char*) IV.data())>0)
 			{
 				len=0;
-				decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(1+encrypted.size()) );
+				decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(encrypted.size()) );
 				if(decrypted_aux!=nullptr&& EVP_DecryptUpdate(ctx, decrypted_aux, &len, (unsigned char*)encrypted.data(), encrypted.size())>0
 				)
 				{

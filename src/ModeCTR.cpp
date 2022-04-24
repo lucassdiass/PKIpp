@@ -14,11 +14,11 @@ void AesCTRMode::ConfigureKey(std::string newKey)
 	unsigned char *key=nullptr;
 	if(newKey.empty())
 	{
-		key=new (std::nothrow)unsigned char[32]{};
-		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*32))
+		key=new (std::nothrow)unsigned char[EVP_CIPHER_key_length(EVP_aes_256_ctr())]{};
+		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*EVP_CIPHER_key_length(EVP_aes_256_ctr())))
 		{
 			SecretKey.clear();
-			for(int index=0;index<32;index++)
+			for(int index=0;index<EVP_CIPHER_key_length(EVP_aes_256_ctr());index++)
 			{
 				SecretKey.push_back(key[index]);
 			}
@@ -34,12 +34,12 @@ void AesCTRMode::ConfigureKey(std::string newKey)
 	{
 		SecretKey=newKey;
 
-		if(newKey.size()<32)
+		if(newKey.size()<EVP_CIPHER_key_length(EVP_aes_256_ctr()))
 		{
-			key=new (std::nothrow) unsigned char[32-newKey.size()]{};
-			if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*(32-newKey.size())))
+			key=new (std::nothrow) unsigned char[EVP_CIPHER_key_length(EVP_aes_256_ctr())-newKey.size()]{};
+			if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*(EVP_CIPHER_key_length(EVP_aes_256_ctr())-newKey.size())))
 			{
-				for(int index=0;index<(32-newKey.size());index++)
+				for(int index=0;index<(EVP_CIPHER_key_length(EVP_aes_256_ctr())-newKey.size());index++)
 				{
 					SecretKey.push_back(key[index]);
 				}
@@ -54,11 +54,11 @@ void AesCTRMode::ConfigureIV(std::string newIV)
 	unsigned char *iv=nullptr;
 	if(newIV.empty())
 	{
-		iv=new (std::nothrow) unsigned char[32]{};
-		if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*32))
+		iv=new (std::nothrow) unsigned char[EVP_CIPHER_iv_length(EVP_aes_256_ctr())]{};
+		if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*EVP_CIPHER_iv_length(EVP_aes_256_ctr())))
 		{
 			CTR.clear();
-			for(int index=0;index<32;index++)
+			for(int index=0;index<EVP_CIPHER_iv_length(EVP_aes_256_ctr());index++)
 			{
 				CTR.push_back(iv[index]);
 			}
@@ -73,6 +73,19 @@ void AesCTRMode::ConfigureIV(std::string newIV)
 	else
 	{
 		CTR=newIV;
+		if(CTR.size()<EVP_CIPHER_iv_length(EVP_aes_256_ctr()))
+		{
+			iv=new (std::nothrow) unsigned char[EVP_CIPHER_iv_length(EVP_aes_256_ctr())-newIV.size()]{};
+			if(iv!=nullptr && RAND_bytes(iv, sizeof(unsigned char)*(EVP_CIPHER_iv_length(EVP_aes_256_ctr())-newIV.size())))
+			{
+				for(int index=0;index<(EVP_CIPHER_iv_length(EVP_aes_256_ctr())-newIV.size());index++)
+				{
+					CTR.push_back(iv[index]);
+				}
+			}
+			delete []iv;
+			iv=nullptr;
+		}
 	}
 }
 
@@ -156,7 +169,7 @@ std::string AesCTRMode::DecryptMessage(const std::string& encrypted)
 			if(EVP_DecryptInit_ex(ctx, EVP_aes_256_ctr(), nullptr, ( unsigned char *)SecretKey.data(), (unsigned char*) CTR.data())>0)
 			{
 				len=0;
-				decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(1+encrypted.size()) );
+				decrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*encrypted.size());
 				if(decrypted_aux!=nullptr&& EVP_DecryptUpdate(ctx, decrypted_aux, &len, (unsigned char*)encrypted.data(), encrypted.size())>0
 				)
 				{
