@@ -13,8 +13,8 @@ void AesCFBMode::ConfigureKey(std::string newKey="")
 	unsigned char *key=nullptr;
 	if(newKey.empty())
 	{
-		key=new (std::nothrow) unsigned char[32]{};
-		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*32))
+		key=new (std::nothrow) unsigned char[EVP_CIPHER_key_length(EVP_aes_256_cfb128())]{};
+		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*EVP_CIPHER_key_length(EVP_aes_256_cfb128())))
 		{
 			SecretKey.clear();
 			for(int index=0;index<32;index++)
@@ -33,12 +33,12 @@ void AesCFBMode::ConfigureKey(std::string newKey="")
 	{
 		SecretKey=newKey;
 
-		if(newKey.size()<32)
+		if(newKey.size()<EVP_CIPHER_key_length(EVP_aes_256_cfb128()))
 		{
-			key=new (std::nothrow) unsigned char[32-newKey.size()]{};
-			if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*(32-newKey.size())))
+			key=new (std::nothrow) unsigned char[EVP_CIPHER_key_length(EVP_aes_256_cfb128())-newKey.size()]{};
+			if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*(EVP_CIPHER_key_length(EVP_aes_256_cfb128())-newKey.size())))
 			{
-				for(int index=0;index<(32-newKey.size());index++)
+				for(int index=0;index<(EVP_CIPHER_key_length(EVP_aes_256_cfb128())-newKey.size());index++)
 				{
 					SecretKey.push_back(key[index]);
 				}
