@@ -112,7 +112,7 @@ PKICertificate::PKICertificate(std::string file_path , std::string file_prv,std:
 		this->Ecc->PrvKey=prv;
 		break;
 	case TypeAlgorithm::rsa:
-		this->Rsa->PrvKey=prv;
+		this->Rsa->PrvKey=EVP_PKEY_ptr(prv, EVP_PKEY_free);
 		break;
 	default:
 		throw std::runtime_error{"Unsupported algorithm"};
@@ -385,7 +385,7 @@ std::string PKICertificate::SignCert(const struct Requisition&requisicao, int se
 							switch (Type)
 							{
 							case TypeAlgorithm::rsa :
-								signok=this->Rsa->PrvKey==nullptr ? false : X509_sign(certificate,this->Rsa->PrvKey,EVP_sha256());
+								signok=this->Rsa->PrvKey.get()==nullptr ? false : X509_sign(certificate,this->Rsa->PrvKey.get(),EVP_sha256());
 								break;
 							case TypeAlgorithm::ecc:
 								signok=this->Ecc->PrvKey==nullptr ? false : X509_sign(certificate,this->Ecc->PrvKey,EVP_sha256());
@@ -479,7 +479,7 @@ bool PKICertificate::VerifyOwnCRL()
 		pk=this->Ecc->PubKey;
 		break;
 	case TypeAlgorithm::rsa :
-		pk=this->Rsa->PubKey;
+		pk=this->Rsa->PubKey.get();
 		break;
 	default :
 		pk=nullptr;
@@ -524,7 +524,7 @@ PKICertificate&PKICertificate::CreateCRL(std::string CRLfile)
 		skkey=this->Ecc->PrvKey;
 		break;
 	case TypeAlgorithm::rsa :
-		skkey=this->Rsa->PrvKey;
+		skkey=this->Rsa->PrvKey.get();
 		break;
 	default:
 		skkey = nullptr;
@@ -563,8 +563,8 @@ PKICertificate&PKICertificate::RevokeCert(std::string cert,bool isfile)
 			pkey=this->Ecc->PubKey;
 			break;
 		case TypeAlgorithm::rsa :
-			skkey=this->Rsa->PrvKey;
-			pkey=this->Rsa->PubKey;
+			skkey=this->Rsa->PrvKey.get();
+			pkey=this->Rsa->PubKey.get();
 			break;
 		default :
 			skkey=nullptr;
@@ -683,7 +683,7 @@ void PKICertificate::UpdateCrl(std::string crl, bool isfile)
 			pkey=this->Ecc->PubKey;
 			break;
 		case TypeAlgorithm::rsa :
-			pkey=this->Rsa->PubKey;
+			pkey=this->Rsa->PubKey.get();
 			break;
 		default :
 			pkey=nullptr;

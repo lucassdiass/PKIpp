@@ -8,7 +8,7 @@
 #ifndef PKI___HPP_
 #define PKI___HPP_
 #include "Interface.hpp"
-#include <openssl/evp.h>
+#include "PKIppTypes.hpp"
 
 namespace PKI
 {
@@ -34,7 +34,7 @@ typedef struct request_data
 }	request_data;
 std::istream&operator>>(std::istream&, request_data&);
 
-class PKIRSA : public InterfacePKI::SignatureDigital, InterfacePKI::Confidentiality, InterfacePKI::StreamStore
+class PKIRSA : public InterfacePKI::SignatureDigital, public InterfacePKI::Confidentiality, public InterfacePKI::StreamStore
 {
 public :
 	friend class  PKICertificate;
@@ -120,12 +120,15 @@ public :
 	 */
 	std::string SelfSign(std::string);
 
-	PKIRSA(const PKIRSA&)=delete;
-	PKIRSA&operator=(const PKIRSA&)=delete;
-	~PKIRSA();
+	PKIRSA(const PKIRSA&)=default;
+
+
+	PKIRSA&operator=(const PKIRSA&)=default;
+	PKIRSA() = default;
+	~PKIRSA() = default;
 private :
-	EVP_PKEY *PubKey=nullptr,*PrvKey=nullptr;
-	X509 * Cert=nullptr;
+	EVP_PKEY_ptr PubKey, PrvKey;
+	//X509_ptr Cert;
 	bool IsCert=false;
 };
 

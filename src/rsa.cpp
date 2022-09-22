@@ -18,7 +18,8 @@
 #include <openssl/pem.h>
 #include <openssl/bio.h>
 using namespace PKI;
-PKIRSA::PKIRSA(unsigned int length) : InterfacePKI::SignatureDigital{},InterfacePKI::Confidentiality{},InterfacePKI::StreamStore{}
+PKIRSA::PKIRSA(unsigned int length) : InterfacePKI::SignatureDigital{},InterfacePKI::Confidentiality{},InterfacePKI::StreamStore{},
+		PubKey{nullptr}, PrvKey{nullptr}
 {
 	if(length<3072)
 	{
@@ -30,7 +31,7 @@ PKIRSA::PKIRSA(unsigned int length) : InterfacePKI::SignatureDigital{},Interface
 	auto pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
 	if(pctx==nullptr||pctx==NULL)
 	{
-		throw std::runtime_error{"Erro em instanciar chaves RSA"};
+		throw std::runtime_error{"Error in initialization of RSA keys"};
 	}
 	while(ret==1 && round<4)
 	{
@@ -69,7 +70,7 @@ PKIRSA::PKIRSA(unsigned int length) : InterfacePKI::SignatureDigital{},Interface
 	{
 		EVP_PKEY_free(PairKey);
 		PairKey=nullptr;
-		throw std::runtime_error{"Erro na geração de chaves"};
+		throw std::runtime_error{"Error in the generation keys"};
 
 	}
 	ret=0;
@@ -80,8 +81,10 @@ PKIRSA::PKIRSA(unsigned int length) : InterfacePKI::SignatureDigital{},Interface
 	{
 		if(PEM_write_bio_PUBKEY(bp_public,PairKey)>0 &&  PEM_write_bio_PrivateKey(bp_private,PairKey,nullptr, nullptr, 0, 0, nullptr)>0)
 		{
-			if((PubKey=PEM_read_bio_PUBKEY(bp_public,nullptr,nullptr,nullptr))!=nullptr &&
-					(PrvKey=PEM_read_bio_PrivateKey(bp_private,nullptr,nullptr, nullptr))!=nullptr)
+			PubKey = EVP_PKEY_ptr(PEM_read_bio_PUBKEY(bp_public,nullptr,nullptr,nullptr), EVP_PKEY_free);
+			PrvKey = EVP_PKEY_ptr(PEM_read_bio_PrivateKey(bp_private,nullptr,nullptr, nullptr), EVP_PKEY_free);
+
+			if( PubKey.get() != nullptr && PrvKey.get()!=nullptr)
 			{
 				ret=1;
 			}
@@ -90,34 +93,32 @@ PKIRSA::PKIRSA(unsigned int length) : InterfacePKI::SignatureDigital{},Interface
 	BIO_free_all(bp_public);
 	BIO_free_all(bp_private);
 	EVP_PKEY_free(PairKey);
-	PairKey=nullptr;
-	if(ret!=1)
+	PairKey = nullptr;
+	if(ret != 1)
 	{
-		EVP_PKEY_free(PubKey);
-		EVP_PKEY_free(PrvKey);
-		throw std::runtime_error{"Erro na geração de chaves"};
+		throw std::runtime_error{"Error in the generation keys"};
 	}
 }
 
 
 
-PKIRSA::PKIRSA(std::string file_pub_path, bool isfile) : InterfacePKI::SignatureDigital{},InterfacePKI::Confidentiality{},InterfacePKI::StreamStore{}
+PKIRSA::PKIRSA(std::string file_pub_path, bool isfile) : InterfacePKI::SignatureDigital{},InterfacePKI::Confidentiality{},InterfacePKI::StreamStore{},
+		PubKey(nullptr)
 {
 	if(!file_pub_path.size())
 	{
-		throw std::runtime_error{"Caminho de arquivo inválido"};
+		throw std::runtime_error{"Invalid path"};
 	}
 	int ret=0;
-	BIO*bp_public=nullptr;
+	BIO * bp_public=nullptr;
 	std::ifstream fs{file_pub_path};
 	if(isfile)
 	{
 		if(fs)
 		{
 			fs.close();
-
-			if((bp_public = BIO_new_file(file_pub_path.c_str(), "r+"))!=nullptr
-					&& (PubKey=PEM_read_bio_PUBKEY(bp_public,nullptr,nullptr,nullptr))!=nullptr)
+			bp_public = BIO_new_file(file_pub_path.c_str(), "r+");
+			if( bp_public !=nullptr)
 			{
 				ret=1;
 			}
@@ -126,18 +127,22 @@ PKIRSA::PKIRSA(std::string file_pub_path, bool isfile) : InterfacePKI::Signature
 	else
 	{
 		bp_public=BIO_new(BIO_s_mem());
-		if(bp_public!=nullptr && BIO_write(bp_public,(void *)file_pub_path.c_str(),file_pub_path.size())
-		&& (PubKey=PEM_read_bio_PUBKEY(bp_public,nullptr,nullptr,nullptr))!=nullptr )
+		if( bp_public !=nullptr && BIO_write(bp_public,(void *)file_pub_path.c_str(),file_pub_path.size()))
 		{
 			ret=1;
 		}
 	}
-	BIO_free_all(bp_public);
-	if(!ret)
+
+	if(ret)
 	{
-		EVP_PKEY_free(PubKey);
+		PubKey = EVP_PKEY_ptr(PEM_read_bio_PUBKEY(bp_public,nullptr,nullptr,nullptr), EVP_PKEY_free);
+	}
+	BIO_free_all(bp_public);
+	if(PubKey.get() == nullptr)
+	{
 		throw std::runtime_error{"It was not possible load the key from "+file_pub_path};
 	}
+
 }
 PKIRSA::PKIRSA(std::string file_pub_path, std::string file_prv_path, bool arefile=true) : PKIRSA{file_pub_path, arefile}
 {
@@ -153,27 +158,28 @@ PKIRSA::PKIRSA(std::string file_pub_path, std::string file_prv_path, bool arefil
 		if(fs)
 		{
 			fs.close();
-
-			if((bp_private = BIO_new_file(file_prv_path.c_str(), "r+"))!=nullptr
-					&& (PrvKey=PEM_read_bio_PrivateKey(bp_private,nullptr,nullptr,nullptr))!=nullptr)
+			bp_private = BIO_new_file(file_prv_path.c_str(), "r+");
+			if(bp_private != nullptr)
 			{
-				ret=1;
+				ret = 1;
 			}
 		}
 	}
 	else
 	{
-		if((bp_private=BIO_new(BIO_s_mem()))!=nullptr && BIO_write(bp_private,(void*)file_prv_path.c_str(),file_prv_path.size())
-		&& (PrvKey=PEM_read_bio_PrivateKey(bp_private,nullptr,nullptr,nullptr)) !=nullptr )
+		if((bp_private=BIO_new(BIO_s_mem()))!=nullptr && BIO_write(bp_private,(void*)file_prv_path.c_str(),file_prv_path.size()))
 		{
 			ret=1;
 		}
 
 	}
-	BIO_free_all(bp_private);
-	if(!ret)
+	if(ret)
 	{
-		EVP_PKEY_free(PrvKey);
+		PrvKey = EVP_PKEY_ptr(PEM_read_bio_PrivateKey(bp_private,nullptr,nullptr,nullptr),EVP_PKEY_free) ;
+	}
+	BIO_free_all(bp_private);
+	if(PrvKey.get() == nullptr)
+	{
 		throw std::runtime_error{"It was not possible load the key from "+file_prv_path};
 	}
 }
@@ -199,8 +205,8 @@ std::string PKIRSA::GenerateRequest(const request_data& dados)
 				X509_NAME_add_entry_by_txt(x509_name,"L",MBSTRING_ASC, (const unsigned char*)dados.szCity.c_str(),-1,-1,0) &&
 				X509_NAME_add_entry_by_txt(x509_name,"O",MBSTRING_ASC, (const unsigned char*)dados.szOrganization.c_str(),-1,-1,0) &&
 				X509_NAME_add_entry_by_txt(x509_name,"CN",MBSTRING_ASC, (const unsigned char*)dados.szCommon.c_str(),-1,-1,0) &&
-				X509_REQ_set_pubkey(x509_req,this->PubKey)&&
-				X509_REQ_sign(x509_req,this->PrvKey,EVP_sha256());
+				X509_REQ_set_pubkey(x509_req,this->PubKey.get())&&
+				X509_REQ_sign(x509_req,this->PrvKey.get(),EVP_sha256());
 	}
 	if(!ret_req)
 	{
@@ -238,7 +244,7 @@ void PKIRSA::SavePubKey(std::string file_pub_path)
 
 	bool ok=false;
 	BIO*bp_public = nullptr;
-	if(this->PubKey==nullptr)
+	if(this->PubKey.get()==nullptr)
 	{
 		throw std::runtime_error{"Public key is null"};
 	}
@@ -246,7 +252,7 @@ void PKIRSA::SavePubKey(std::string file_pub_path)
 	{
 		throw std::runtime_error{"Invalid path"};
 	}
-	ok=((bp_public = BIO_new_file(file_pub_path.c_str(), "w+"))!=nullptr && PEM_write_bio_PUBKEY(bp_public,this->PubKey)>0);
+	ok=((bp_public = BIO_new_file(file_pub_path.c_str(), "w+"))!=nullptr && PEM_write_bio_PUBKEY(bp_public,this->PubKey.get())>0);
 	BIO_free_all(bp_public);
 	if(!ok)
 	{
@@ -257,7 +263,7 @@ void PKIRSA::SavePrvKey(std::string file_prv_path)
 {
 	BIO*bp_private = nullptr;
 	bool ok=false;;
-	if(PrvKey==nullptr)
+	if(PrvKey.get() == nullptr)
 	{
 		throw std::runtime_error{"Private key is null"};
 	}
@@ -266,7 +272,8 @@ void PKIRSA::SavePrvKey(std::string file_prv_path)
 	{
 		throw std::runtime_error{"Invalid path"};
 	}
-	ok=((bp_private = BIO_new_file(file_prv_path.c_str(), "w+"))!=nullptr && PEM_write_bio_PrivateKey(bp_private,this->PrvKey,NULL, NULL, 0, 0, NULL)>0);
+	ok=((bp_private = BIO_new_file(file_prv_path.c_str(), "w+"))!=nullptr &&
+			PEM_write_bio_PrivateKey(bp_private,this->PrvKey.get(),NULL, NULL, 0, 0, NULL)>0);
 	BIO_free_all(bp_private);
 	if(!ok)
 	{
@@ -296,7 +303,7 @@ std::string PKIRSA::SignMessage(std::string message)
 		}
 		case 1 :
 		{
-			ret=EVP_DigestSignInit(mdctx, nullptr, EVP_sha256(), nullptr,this->PrvKey);
+			ret=EVP_DigestSignInit(mdctx, nullptr, EVP_sha256(), nullptr,this->PrvKey.get());
 			break;
 		}
 		case 2:
@@ -347,7 +354,7 @@ bool PKIRSA::VerifySignatureMessage(std::string message, std::string signature)
 	mdctx = EVP_MD_CTX_create();
 	if(mdctx != nullptr)
 	{
-		if(EVP_DigestVerifyInit(mdctx, nullptr, EVP_sha256(), nullptr,this->PubKey))
+		if(EVP_DigestVerifyInit(mdctx, nullptr, EVP_sha256(), nullptr,this->PubKey.get()))
 		{
 			if(EVP_DigestVerifyUpdate(mdctx, message.data(), message.size()))
 			{
@@ -368,13 +375,14 @@ std::string PKIRSA::EncryptMessage(const std::string& plain)
 	size_t len=0,success=0;
 	std::string encrypted{};
 	char * encrypted_aux=nullptr;
-	params=EVP_PKEY_CTX_new(this->PubKey, NULL);
+	params = EVP_PKEY_CTX_new(this->PubKey.get(), NULL);
 	if(params!=nullptr && EVP_PKEY_encrypt_init(params))
 	{
 		if(EVP_PKEY_encrypt(params,nullptr,&len,(unsigned char*)plain.data(),plain.size()) && len>0 )
 		{
 			encrypted_aux=( char*)OPENSSL_malloc(sizeof( char) * (len));
-			if(encrypted_aux!=nullptr && EVP_PKEY_encrypt(params,(unsigned char*)encrypted_aux,&success,(unsigned char*)plain.data(),plain.size()))
+			if(encrypted_aux!=nullptr &&
+					EVP_PKEY_encrypt(params,(unsigned char*)encrypted_aux,&success,(unsigned char*)plain.data(),plain.size()))
 			{
 				for(int index=0;index<len;index++)
 				{
@@ -402,13 +410,14 @@ std::string PKIRSA::DecryptMessage(const std::string&encrypted)
 	size_t len=0;
 	std::string plain{};
 	char * plain_aux=nullptr;
-	params=EVP_PKEY_CTX_new(PrvKey, nullptr);
+	params=EVP_PKEY_CTX_new(PrvKey.get(), nullptr);
 	if(params!=nullptr && EVP_PKEY_decrypt_init(params))
 	{
 		if(EVP_PKEY_decrypt(params,nullptr,&len,(unsigned char*)encrypted.data(),encrypted.size()) && len)
 		{
 			plain_aux=( char*)OPENSSL_malloc(sizeof( char) * (len));
-			if(plain_aux!=nullptr && EVP_PKEY_decrypt(params,(unsigned char*)plain_aux,&len,(unsigned char*)encrypted.data(),encrypted.size())>0 )
+			if(plain_aux!=nullptr &&
+					EVP_PKEY_decrypt(params,(unsigned char*)plain_aux,&len,(unsigned char*)encrypted.data(),encrypted.size())>0 )
 			{
 				for(int index=0;index<len;index++)
 				{
@@ -434,7 +443,7 @@ std::string  PKIRSA::SavePrvKey()
 	char *prvkeystr_aux=nullptr;
 	bp_private=BIO_new(BIO_s_mem());
 
-	if( bp_private!=nullptr && PEM_write_bio_PrivateKey(bp_private,PrvKey,nullptr, nullptr, 0, 0, nullptr)>0)
+	if( bp_private!=nullptr && PEM_write_bio_PrivateKey(bp_private,PrvKey.get(),nullptr, nullptr, 0, 0, nullptr)>0)
 	{
 		if(BIO_read_ex(bp_private,nullptr,-1,&len) && len>0)
 		{
@@ -465,7 +474,7 @@ std::string  PKIRSA::SavePubKey()
 	size_t  len=0, success=0;
 	char *pubkeystr_aux=nullptr;
 	bp_public=BIO_new(BIO_s_mem());
-	if( bp_public!=nullptr &&PEM_write_bio_PUBKEY(bp_public,PubKey)>0)
+	if( bp_public!=nullptr &&PEM_write_bio_PUBKEY(bp_public,PubKey.get())>0)
 	{
 		if(BIO_read_ex(bp_public,nullptr,-1,&len) && len>0)
 		{
@@ -489,47 +498,47 @@ std::string  PKIRSA::SavePubKey()
 std::string PKIRSA::SelfSign(std::string request)
 {
 	X509_REQ *requisition=nullptr;
-	std::string Certificado{};
-	char *certificado_aux=nullptr;
+	std::string Certificate_str{};
+	char *certificate_aux=nullptr;
 	X509 *certificate=nullptr;
 	ASN1_INTEGER *aserial=nullptr;
-	size_t tamanho=0, escritos=0;
+	size_t lenght=0, writed=0;
 
 	BIO * bio_requisition=nullptr,* bio_certificate=nullptr;
 
 	if( (bio_requisition=BIO_new(BIO_s_mem()))!=nullptr && 	BIO_write(bio_requisition, request.data(), request.size()) &&
 			(requisition=PEM_read_bio_X509_REQ(bio_requisition,nullptr,nullptr,nullptr))!=nullptr )
 	{
-		if(X509_REQ_verify(requisition,this->PubKey))
+		if(X509_REQ_verify(requisition,this->PubKey.get()))
 		{
 			certificate=X509_new();
 			aserial=ASN1_INTEGER_new();
 			if(certificate!=nullptr && X509_set_version(certificate,2) && aserial!=nullptr && ASN1_INTEGER_set(aserial,1) &&
 					X509_set_subject_name(certificate,X509_REQ_get_subject_name(requisition)) &&
 					X509_set_issuer_name(certificate,X509_REQ_get_subject_name(requisition)) &&
-					X509_set_pubkey(certificate,this->PubKey) &&
+					X509_set_pubkey(certificate,this->PubKey.get()) &&
 					X509_gmtime_adj(X509_get_notBefore(certificate),0)&&
 					X509_gmtime_adj(X509_get_notAfter(certificate),365*3*24*60*60)&&
 					this->PrvKey!=nullptr &&
-					X509_sign(certificate,this->PrvKey, EVP_sha256()))
+					X509_sign(certificate,this->PrvKey.get(), EVP_sha256()))
 			{
 				bio_certificate=BIO_new(BIO_s_mem());
 				if(bio_certificate!=nullptr && PEM_write_bio_X509(bio_certificate,certificate))
 				{
-					if(BIO_read_ex(bio_certificate,nullptr,-1,&tamanho) && tamanho)
+					if(BIO_read_ex(bio_certificate,nullptr,-1,&lenght) && lenght)
 					{
-						certificado_aux=new char[tamanho];
-						if(certificado_aux!=nullptr && BIO_read_ex(bio_certificate,certificado_aux,tamanho,&escritos) && tamanho==escritos)
+						certificate_aux=new char[lenght];
+						if(certificate_aux!=nullptr && BIO_read_ex(bio_certificate,certificate_aux, lenght,&writed) && lenght==writed)
 						{
-							Certificado=std::string{certificado_aux,escritos};
+							Certificate_str=std::string{certificate_aux,writed};
 						}
 					}
 				}
 			}
 			BIO_free_all(bio_certificate);
 			bio_certificate=nullptr;
-			delete []certificado_aux;
-			certificado_aux=nullptr;
+			delete []certificate_aux;
+			certificate_aux=nullptr;
 			X509_free(certificate);
 			certificate=nullptr;
 			ASN1_INTEGER_free(aserial);
@@ -540,16 +549,10 @@ std::string PKIRSA::SelfSign(std::string request)
 	bio_requisition=nullptr;
 	X509_REQ_free(requisition);
 	requisition=nullptr;
-	if(Certificado.size())
+	if(Certificate_str.size())
 	{
-		return Certificado;
+		return Certificate_str;
 	}
 	throw std::runtime_error{"It was not possible generate the auto-signed digital certificate"};
 }
-PKIRSA::~PKIRSA()
-{
-	EVP_PKEY_free(PrvKey);
-	PrvKey=nullptr;
-	EVP_PKEY_free(PubKey);
-	PubKey=nullptr;
-}
+
