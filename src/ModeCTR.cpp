@@ -12,41 +12,29 @@ using namespace PKI::Symmetric;
 void AesCTRMode::ConfigureKey(std::string newKey)
 {
 	unsigned char *key=nullptr;
-	if(newKey.empty())
+	if(newKey.size() == EVP_CIPHER_key_length(EVP_aes_256_ctr())) {
+		SecretKey=newKey;
+	} else if (newKey.size()<EVP_CIPHER_key_length(EVP_aes_256_ctr()))
 	{
-		key=new (std::nothrow)unsigned char[EVP_CIPHER_key_length(EVP_aes_256_ctr())]{};
-		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*EVP_CIPHER_key_length(EVP_aes_256_ctr())))
+		key=new (std::nothrow) unsigned char[EVP_CIPHER_key_length(EVP_aes_256_ctr())-newKey.size()]{};
+		if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*(EVP_CIPHER_key_length(EVP_aes_256_ctr())-newKey.size())))
 		{
-			SecretKey.clear();
-			for(int index=0;index<EVP_CIPHER_key_length(EVP_aes_256_ctr());index++)
+			for(int index=0;index<(EVP_CIPHER_key_length(EVP_aes_256_ctr())-newKey.size());index++)
 			{
 				SecretKey.push_back(key[index]);
 			}
 			delete []key;
 			key=nullptr;
-		}
-		else
-		{
+		} else {
 			throw std::runtime_error{"It was not possible generate the key"};
 		}
 	}
-	else
-	{
-		SecretKey=newKey;
-
-		if(newKey.size()<EVP_CIPHER_key_length(EVP_aes_256_ctr()))
+	else {
+		for(int index=0;index < EVP_CIPHER_key_length(EVP_aes_256_ctr());index++)
 		{
-			key=new (std::nothrow) unsigned char[EVP_CIPHER_key_length(EVP_aes_256_ctr())-newKey.size()]{};
-			if(key!=nullptr && RAND_bytes(key, sizeof(unsigned char)*(EVP_CIPHER_key_length(EVP_aes_256_ctr())-newKey.size())))
-			{
-				for(int index=0;index<(EVP_CIPHER_key_length(EVP_aes_256_ctr())-newKey.size());index++)
-				{
-					SecretKey.push_back(key[index]);
-				}
-				delete []key;
-				key=nullptr;
-			}
+			SecretKey.push_back(newKey[index]);
 		}
+
 	}
 }
 void AesCTRMode::ConfigureIV(std::string newIV)
@@ -197,7 +185,7 @@ std::string AesCTRMode::DecryptMessage(const std::string& encrypted)
 	}
 	if(!plain.size())
 	{
-		std::runtime_error{"It was not possible decrypt the message"};
+		throw std::runtime_error{"It was not possible decrypt the message"};
 	}
 	return plain;
 }
