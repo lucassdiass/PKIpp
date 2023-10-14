@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <PKIpp/PKISymmetric.hpp>
+#include <PKIpp/PKI++.hpp>
+
 class ConfidentialityTester : public testing::Test {
 public:
 	std::string generateString(size_t n)
@@ -24,20 +26,20 @@ public:
 	std::shared_ptr<InterfacePKI::Confidentiality>  enc;
 };
 
-TEST_F(ConfidentialityTester, ECBModeOkSize10)
+TEST_F(ConfidentialityTester, ECBModeOkSize32)
 {
 	std::string plain{}, encrypted{};
-	plain = generateString(10);
+	plain = generateString(32);
 	std::shared_ptr<PKI::Symmetric::AesECBMode> ecb  (new PKI::Symmetric::AesECBMode);
 	EXPECT_NO_THROW(ecb->ConfigureKey(std::string{}));
 	enc = ecb;
 	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
 	EXPECT_EQ(plain, enc->DecryptMessage(encrypted));
 }
-TEST_F(ConfidentialityTester, ECBModeErrorSize10)
+TEST_F(ConfidentialityTester, ECBModeErrorSize32)
 {
 	std::string plain{}, encrypted{};
-	plain = generateString(10);
+	plain = generateString(32);
 	std::shared_ptr<PKI::Symmetric::AesECBMode> ecb  (new PKI::Symmetric::AesECBMode);
 	EXPECT_NO_THROW(ecb->ConfigureKey(std::string{}));
 	enc = ecb;
@@ -45,20 +47,20 @@ TEST_F(ConfidentialityTester, ECBModeErrorSize10)
 	encrypted[0] = encrypted[0] + 1;
 	EXPECT_NE(plain, enc->DecryptMessage(encrypted));
 }
-TEST_F(ConfidentialityTester, ECBModeOkSize100)
+TEST_F(ConfidentialityTester, ECBModeOkSize1024)
 {
 	std::string plain{}, encrypted{};
-	plain = generateString(100);
+	plain = generateString(1024);
 	std::shared_ptr<PKI::Symmetric::AesECBMode> ecb  (new PKI::Symmetric::AesECBMode);
 	EXPECT_NO_THROW(ecb->ConfigureKey(std::string{}));
 	enc = ecb;
 	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
 	EXPECT_EQ(plain, enc->DecryptMessage(encrypted));
 }
-TEST_F(ConfidentialityTester, ECBModeErrorSize100)
+TEST_F(ConfidentialityTester, ECBModeErrorSize1024)
 {
 	std::string plain{}, encrypted{};
-	plain = generateString(100);
+	plain = generateString(1024);
 	std::shared_ptr<PKI::Symmetric::AesECBMode> ecb  (new PKI::Symmetric::AesECBMode);
 	EXPECT_NO_THROW(ecb->ConfigureKey(std::string{}));
 	enc = ecb;
@@ -66,20 +68,20 @@ TEST_F(ConfidentialityTester, ECBModeErrorSize100)
 	encrypted[0] = encrypted[0] + 1;
 	EXPECT_NE(plain, enc->DecryptMessage(encrypted));
 }
-TEST_F(ConfidentialityTester, ECBModeOkSize1000)
+TEST_F(ConfidentialityTester, ECBModeOkSize32768)
 {
 	std::string plain{}, encrypted{};
-	plain = generateString(1000);
+	plain = generateString(32768);
 	std::shared_ptr<PKI::Symmetric::AesECBMode> ecb  (new PKI::Symmetric::AesECBMode);
 	EXPECT_NO_THROW(ecb->ConfigureKey(std::string{}));
 	enc = ecb;
 	EXPECT_NO_THROW(encrypted = enc->EncryptMessage(plain));
 	EXPECT_EQ(plain, enc->DecryptMessage(encrypted));
 }
-TEST_F(ConfidentialityTester, ECBModeErrorSize1000)
+TEST_F(ConfidentialityTester, ECBModeErrorSize32768)
 {
 	std::string plain{}, encrypted{};
-	plain = generateString(1000);
+	plain = generateString(32768);
 	std::shared_ptr<PKI::Symmetric::AesECBMode> ecb  (new PKI::Symmetric::AesECBMode);
 	EXPECT_NO_THROW(ecb->ConfigureKey(std::string{}));
 	enc = ecb;
@@ -88,10 +90,10 @@ TEST_F(ConfidentialityTester, ECBModeErrorSize1000)
 	EXPECT_NE(plain, enc->DecryptMessage(encrypted));
 }
 
-TEST_F(ConfidentialityTester, ECBModeOkSize10000)
+TEST_F(ConfidentialityTester, ECBModeOkSize1048576)
 {
 	std::string plain{}, encrypted{};
-	plain = generateString(10000);
+	plain = generateString(1048576);
 	std::shared_ptr<PKI::Symmetric::AesECBMode> ecb  (new PKI::Symmetric::AesECBMode);
 	EXPECT_NO_THROW(ecb->ConfigureKey(std::string{}));
 	enc = ecb;
@@ -99,10 +101,10 @@ TEST_F(ConfidentialityTester, ECBModeOkSize10000)
 	std::string aux = enc->DecryptMessage(encrypted);
 	EXPECT_EQ(plain, aux);
 }
-TEST_F(ConfidentialityTester, ECBModeErrorSize10000)
+TEST_F(ConfidentialityTester, ECBModeErrorSize1048576)
 {
 	std::string plain{}, encrypted{};
-	plain = generateString(10000);
+	plain = generateString(1048576);
 	std::shared_ptr<PKI::Symmetric::AesECBMode> ecb  (new PKI::Symmetric::AesECBMode);
 	EXPECT_NO_THROW(ecb->ConfigureKey(std::string{}));
 	enc = ecb;

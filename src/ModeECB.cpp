@@ -71,16 +71,11 @@ std::string AesECBMode::EncryptMessage(const std::string& plain)
 				len=len_aux;
 				if(len_aux!=(float)len)
 				{
-					len=(len*EVP_CIPHER_block_size(EVP_aes_256_ecb())) + EVP_CIPHER_block_size(EVP_aes_256_ecb());
-					while(plain_aux.size() !=  len)
-					{
-						plain_aux.push_back('\0');
-					}
+					throw std::runtime_error{"It was not possible encrypt the message with it is not multiple of 32 bytes"};
 				}
-				else
-				{
-					len=(len*EVP_CIPHER_block_size(EVP_aes_256_ecb()));
-				}
+
+				len=(len*EVP_CIPHER_block_size(EVP_aes_256_ecb()));
+
 				encrypted_aux=(unsigned char*)OPENSSL_malloc(sizeof(unsigned char)*(len) );
 
 				if(encrypted_aux!=nullptr &&
@@ -145,7 +140,7 @@ std::string AesECBMode::DecryptMessage(const std::string&encrypted)
 					else {
 						plen = 0;
 					}
-					for(int index=0;index<plen && *(decrypted_aux+index) != '\0';index++)
+					for(int index=0;index<plen; index++)
 					{
 						plain.push_back(*(decrypted_aux+index));
 					}
