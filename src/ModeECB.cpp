@@ -71,7 +71,7 @@ std::string AesECBMode::EncryptMessage(const std::string& plain)
 				len=len_aux;
 				if(len_aux!=(float)len)
 				{
-					throw std::runtime_error{"It was not possible encrypt the message with it is not multiple of 32 bytes"};
+					throw std::runtime_error{"It was not possible encrypt the message with it is not multiple of 16 bytes"};
 				}
 
 				len=(len*EVP_CIPHER_block_size(EVP_aes_256_ecb()));
